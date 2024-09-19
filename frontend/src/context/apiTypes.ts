@@ -7,8 +7,11 @@ export interface OrchardSimulation2D {
   num_bot: number
   seed: number
   bot_locations: Coord[]
+  starting_bot_locations: Coord[]
   trees: Coord[]
+  starting_tree_locations: Coord[]
   apples: Coord[]
+  starting_apple_locations: Coord[]
   time: number
 }
 
@@ -19,7 +22,7 @@ export interface WsError {
 
 export interface WsSimulationUpdate {
   type: 'simulation'
-  data: OrchardSimulation2D
+  simulation: OrchardSimulation2D
 }
 
 export type WsMessage = WsError | WsSimulationUpdate

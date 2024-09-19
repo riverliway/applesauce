@@ -2,8 +2,12 @@
 
 import asyncio
 import json
+import traceback
 from websockets.asyncio.server import serve
 from simulation.orchard import OrchardSimulation2D
+from simulation.simple_solver import make_simple_decision
+
+SIMULATION_TIMEOUT = 1000
 
 async def designator(websocket) -> None:
   """
@@ -26,9 +30,16 @@ async def designator(websocket) -> None:
       if message['type'] == 'hello':
         return await websocket.send('Hello world!')
       elif message['type'] == 'start-simulation':
-        return await websocket.send(simulation_response(OrchardSimulation2D(message['params']['width'], message['params']['height'], message['params']['num_bots'])))
+        environment = OrchardSimulation2D(message['params']['width'], message['params']['height'], message['params']['num_bots'])
+        await websocket.send(simulation_response(environment))
+
+        while environment.time < SIMULATION_TIMEOUT and len(environment.apples) > 0:
+          actions = make_simple_decision(environment)
+          environment.step(actions)
+          await websocket.send(simulation_response(environment))
 
     except:
+      print(traceback.format_exc())
       await websocket.send(error('An error occurred'))
 
 def error(message: str) -> dict:

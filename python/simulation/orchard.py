@@ -4,7 +4,7 @@ import math
 
 class OrchardSimulation2D:
   # How dense the trees can be placed in the orchard. This is a probability value.
-  TREE_DENSITY = 0.5
+  TREE_DENSITY = 0.05
   # How dense the apples can be placed in the orchard. This is a probability value.
   APPLE_DENSITY = 0.15
 
@@ -69,6 +69,10 @@ class OrchardSimulation2D:
       if np.random.rand() < self.APPLE_DENSITY and (x, y) not in self.bot_locations and (x, y) not in self.trees
     ]
 
+    self.starting_bot_locations = [location for location in self.bot_locations]
+    self.starting_tree_locations = [location for location in self.trees]
+    self.starting_apple_locations = [location for location in self.apples]
+
   def step(self, actions: list[str]) -> list[float]:
     """
     Advances the simulation by one time step.
@@ -107,6 +111,12 @@ class OrchardSimulation2D:
 
     return rewards
   
+  def is_valid_location(self, x: int, y: int) -> bool:
+    """
+    Checks if this location is a valid location for the bot to move to.
+    """
+    return self.__policy_movement(x, y)[1]
+  
   def __action_movement(self, bot_idx: int, dx: int, dy: int) -> float:
     """
     Moves the bot at the given index by the given dx and dy values.
@@ -119,7 +129,7 @@ class OrchardSimulation2D:
     """
 
     new_location = (self.bot_locations[bot_idx][0] + dx, self.bot_locations[bot_idx][1] + dy)
-    reward, can_move_there = self.__policy_movement(bot_idx)
+    reward, can_move_there = self.__policy_movement(new_location[0], new_location[1])
     if can_move_there:
       self.bot_locations[bot_idx] = new_location
 
@@ -192,8 +202,11 @@ class OrchardSimulation2D:
       "num_bots": self.num_bots,
       "seed": self.seed,
       "bot_locations": self.bot_locations,
+      "starting_bot_locations": self.starting_bot_locations,
       "trees": self.trees,
+      "starting_tree_locations": self.starting_tree_locations,
       "apples": self.apples,
+      "starting_apple_locations": self.starting_apple_locations,
       "time": self.time
     }
 
@@ -222,6 +235,11 @@ class OrchardSimulation2D:
     sim.num_bots = data["num_bots"]
     sim.seed = data["seed"]
     sim.bot_locations = data["bot_locations"]
+    sim.starting_bot_locations = data["starting_bot_locations"]
+    sim.trees = data["trees"]
+    sim.starting_tree_locations = data["starting_tree_locations"]
+    sim.apples = data["apples"]
+    sim.starting_apple_locations = data["starting_apple_locations"]
     sim.time = data["time"]
 
     return sim
