@@ -157,3 +157,5 @@ build
 # Metadata lookup files
 GeoIP2-City.mmdb
 GeoIP2-ISP.mmdb
+
+__pycache__

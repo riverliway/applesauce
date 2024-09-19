@@ -1,8 +1,7 @@
 import React from 'react'
-
-import './ErrorPage.css'
-import { Button } from 'antd'
 import { useNavigate } from 'react-router'
+
+import { Button } from '@mui/material'
 
 interface ErrorPageProps {
   title: string
@@ -19,7 +18,7 @@ interface ErrorPageProps {
  * @prop onButtonClick - the function to call when the button is clicked
  */
 export const ErrorPage: React.FC<ErrorPageProps> = props => {
-  const navigate = useNavigate()
+  const navigate = props.buttonText !== '' ? useNavigate() : (_str: string) => {}
 
   const buttonText = props.buttonText ?? 'Return Home'
   const onButtonClick = props.onButtonClick ?? ((): void => {
@@ -28,13 +27,13 @@ export const ErrorPage: React.FC<ErrorPageProps> = props => {
   })
 
   return (
-    <div className='errorPageContain'>
-      <img className='errorImg' src='/error.png' alt='computer error screen' />
-      <div className='errorPageContent'>
-        <div className='errorPageTitle'>{props.title}</div>
+    <div className='w-full flex flex-col justify-items-center items-center'>
+      <img className='w-4/5 max-w-2xl' src='/error.png' alt='computer error screen' />
+      <div className='flex flex-col justify-items-center items-center'>
+        <div className='text-2xl font-bold'>{props.title}</div>
         {props.description && <div>{props.description}</div>}
       </div>
-      {buttonText && <Button size='large' type='primary' onClick={onButtonClick}>{buttonText}</Button>}
+      {buttonText && <Button onClick={onButtonClick}>{buttonText}</Button>}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import asyncio
+import json
 from websockets.asyncio.server import serve
 from simulation.orchard import OrchardSimulation2D
 
@@ -10,21 +11,22 @@ async def designator(websocket) -> None:
 
   :param: websocket [WebSocketServerProtocol] The websocket connection.
   """
-  async for message in websocket:
+  async for msg in websocket:
     try:
+      message = json.loads(json.loads(msg))
       print('~' * 80)
       print(message)
 
       if not isinstance(message, dict):
-        await websocket.send(error('Expected a dictionary'))
+        return await websocket.send(error('Expected a dictionary'))
 
       if not 'type' in message:
-        await websocket.send(error("Expected a 'type' key"))
+        return await websocket.send(error("Expected a 'type' key"))
 
-      if message.type == 'hello':
-        await websocket.send('Hello world!')
-      elif message.type == 'start-simulation':
-        await websocket.send(simulation_response(OrchardSimulation2D(20, 10, 1)))
+      if message['type'] == 'hello':
+        return await websocket.send('Hello world!')
+      elif message['type'] == 'start-simulation':
+        return await websocket.send(simulation_response(OrchardSimulation2D(message['params']['width'], message['params']['height'], message['params']['num_bots'])))
 
     except:
       await websocket.send(error('An error occurred'))
@@ -37,7 +39,7 @@ def error(message: str) -> dict:
 
   :return: dict
   '''
-  return {'type': 'error', 'message': message}
+  return json.dumps({'type': 'error', 'message': message})
 
 def simulation_response(simulation: OrchardSimulation2D) -> dict:
   '''
@@ -47,10 +49,10 @@ def simulation_response(simulation: OrchardSimulation2D) -> dict:
 
   :return: dict
   '''
-  return {
+  return json.dumps({
     'type': 'simulation',
     'simulation': simulation.to_dict()
-  }
+  })
 
 async def main():
   async with serve(designator, '127.0.0.1', 4000):
