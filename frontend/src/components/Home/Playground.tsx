@@ -8,7 +8,7 @@ export const Playground: React.FC = () => {
   const api = useWebsocketContext()
   const [width, setWidth] = useState(21)
   const [height, setHeight] = useState(11)
-  const [numBots, setNumBots] = useState(1)
+  const [numBots, setNumBots] = useState(2)
   const [orchard, setOrchard] = useState<OrchardSimulation2D | undefined>()
   const [stateUpdateQueue, setStateUpdateQueue] = useState<OrchardSimulation2D[]>([])
 

@@ -13,6 +13,10 @@ def make_simple_decision(environment) -> list[str]:
   
   pickable_locations = [(apple_loc[0] + d[0], apple_loc[1] + d[1]) for apple_loc in environment.apples for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
   for index, bot_location in enumerate(environment.bot_locations):
+    # If there are no apples, do nothing
+    if len(environment.apples) == 0:
+      continue
+
     # If the bot is next to an apple, pick
     if bot_location in pickable_locations:
       decisions[index] = 'pick'
@@ -53,7 +57,6 @@ def astar(environment, start: tuple[int, int], goal: tuple[int, int]) -> str:
     start,
     goal,
     neighbors_fnct=find_neighbors,
-    # heuristic_cost_estimate_fnct=lambda loc1, loc2: abs(loc1[0] - loc2[0]) + abs(loc1[1] - loc2[1]),
     distance_between_fnct=lambda loc1, loc2: abs(loc1[0] - loc2[0]) + abs(loc1[1] - loc2[1])
   )
 
@@ -64,7 +67,6 @@ def astar(environment, start: tuple[int, int], goal: tuple[int, int]) -> str:
     return 'idle'
   
   next_loc = list(result)[1]
-  print(f'Next location: {next_loc}')
   dx = next_loc[0] - start[0]
   dy = next_loc[1] - start[1]
 

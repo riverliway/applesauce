@@ -173,6 +173,10 @@ class OrchardSimulation2D:
     if (x, y) in self.trees:
       return self.OUT_OF_BOUNDS_PENALTY, False
     
+    # Penalize the bot if it runs into another bot
+    if (x, y) in self.bot_locations:
+      return self.OUT_OF_BOUNDS_PENALTY, False
+    
     # Penalize the bot if it runs over an apple
     if (x, y) in self.apples:
       return self.CRUSH_APPLE_PENALTY, True
