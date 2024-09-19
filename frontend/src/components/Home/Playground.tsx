@@ -23,7 +23,6 @@ export const Playground: React.FC = () => {
 
   useEffect(() => {
     const clear = setInterval(() => {
-      console.log(stateUpdateQueue.length)
       if (stateUpdateQueue.length > 0) {
         setOrchard(stateUpdateQueue[0])
         setStateUpdateQueue(q => q.slice(1))
