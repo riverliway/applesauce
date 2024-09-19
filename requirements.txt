@@ -1,0 +1,2 @@
+websockets==13.0.1
+python-astar==0.1.0
