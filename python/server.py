@@ -66,6 +66,7 @@ def simulation_response(simulation: OrchardSimulation2D) -> dict:
   })
 
 async def main():
+  print('Starting server on ws://127.0.0.1:4000')
   async with serve(designator, '127.0.0.1', 4000):
     await asyncio.get_running_loop().create_future()
 
