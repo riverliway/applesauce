@@ -17,7 +17,14 @@ async def designator(websocket) -> None:
   """
   async for msg in websocket:
     try:
-      message = json.loads(json.loads(msg))
+      message = json.loads(msg)
+
+      try:
+        # Attempt to parse again because message may be double encoded
+        message = json.loads(message)
+      except:
+        pass
+
       print('~' * 80)
       print(message)
 
