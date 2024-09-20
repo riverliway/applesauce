@@ -28,7 +28,7 @@ async def designator(websocket) -> None:
         return await websocket.send(error("Expected a 'type' key"))
 
       if message['type'] == 'hello':
-        return await websocket.send('Hello world!')
+        return await websocket.send(json.dumps({'type': 'hello', 'message': 'Hello, world!'}))
       elif message['type'] == 'start-simulation':
         environment = OrchardSimulation2D(message['params']['width'], message['params']['height'], message['params']['num_bots'])
         await websocket.send(simulation_response(environment))
