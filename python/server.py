@@ -4,6 +4,8 @@ import asyncio
 import json
 import traceback
 from websockets.asyncio.server import serve
+from dotenv import dotenv_values
+
 from simulation.orchard import OrchardSimulation2D
 from simulation.simple_solver import make_simple_decision
 
@@ -73,8 +75,11 @@ def simulation_response(simulation: OrchardSimulation2D) -> dict:
   })
 
 async def main():
-  print('Starting server on ws://127.0.0.1:4000')
-  async with serve(designator, '127.0.0.1', 4000):
+  config = dotenv_values(".env")
+  host = config['WS_IP'] if 'WS_IP' in config else '127.0.0.1'
+
+  print(f'Starting server on ws://{host}:4000')
+  async with serve(designator, host, 4000):
     await asyncio.get_running_loop().create_future()
 
 asyncio.run(main())
