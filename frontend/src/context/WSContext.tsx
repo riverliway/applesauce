@@ -6,7 +6,7 @@ import { ErrorPage } from '../components/Error/ErrorPage'
 
 const WEBSOCKET_URL = localStageProd({
   local: 'ws://apple-api.riverway.li:4000',
-  prod: 'ws://apple-api.riverway.li:4000'
+  prod: 'wss://apple-api.riverway.li:4000'
 })
 
 type WsCallback<T extends WsMessageType> = (message: WsMessageTypeMap[T]) => void
