@@ -26,15 +26,23 @@ export interface Bot {
   x: number
   y: number
   job: 'picker' | 'pusher'
-  holding: boolean
+  holding: number | null
   diameter: number
   orientation: number
+}
+
+export interface Basket {
+  x: number
+  y: number
+  diameter: number
 }
 
 export interface Apple {
   x: number
   y: number
   diameter: number
+  held: boolean
+  collected: boolean
 }
 
 export interface OrchardComplex2D {
@@ -46,10 +54,13 @@ export interface OrchardComplex2D {
   time: number
   trees: Tree[]
   bots: Bot[]
+  baskets: Basket[]
   apples: Apple[]
   starting_bots: Bot[]
+  starting_baskets: Basket[]
   starting_trees: Tree[]
   starting_apples: Apple[]
+  TICK_SPEED: number
 }
 
 export interface WsError {

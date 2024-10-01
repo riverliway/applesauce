@@ -10,7 +10,7 @@ from simulation.orchard import *
 from simulation.simple_solver import make_simple_decision
 from simulation.complex_baseline import make_complex_decision
 
-SIMULATION_TIMEOUT = 1000
+SIMULATION_TIMEOUT = 100000
 
 async def designator(websocket) -> None:
   """
@@ -57,10 +57,23 @@ async def designator(websocket) -> None:
             await websocket.send(simulation_response(environment))
 
         elif sim_type == 'complex':
+          prev_bots = environment.bots
+          time_stuck = 0
           while environment.time < SIMULATION_TIMEOUT and len([a for a in environment.apples if not a['collected']]) > 0:
             actions = make_complex_decision(environment)
             environment.step(actions)
             await websocket.send(simulation_response(environment))
+
+            if all([b['x'] == p['x'] and b['y'] == p['y'] and b['orientation'] == p['orientation'] for b, p in zip(environment.bots, prev_bots)]):
+              time_stuck += 1
+            else:
+              time_stuck = 0
+
+            if time_stuck > 10:
+              print('Stuck for too long')
+              break
+
+            prev_bots = [{'x': b['x'], 'y': b['y'], 'orientation': b['orientation']} for b in environment.bots]
 
     except:
       print(traceback.format_exc())
