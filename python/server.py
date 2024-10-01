@@ -8,6 +8,7 @@ from dotenv import dotenv_values
 
 from simulation.orchard import *
 from simulation.simple_solver import make_simple_decision
+from simulation.complex_baseline import make_complex_decision
 
 SIMULATION_TIMEOUT = 1000
 
@@ -49,9 +50,15 @@ async def designator(websocket) -> None:
           
         await websocket.send(simulation_response(environment))
 
-        if sim_type != 'complex':
+        if sim_type == 'simple':
           while environment.time < SIMULATION_TIMEOUT and len(environment.apples) > 0:
             actions = make_simple_decision(environment)
+            environment.step(actions)
+            await websocket.send(simulation_response(environment))
+
+        elif sim_type == 'complex':
+          while environment.time < SIMULATION_TIMEOUT and len([a for a in environment.apples if not a['collected']]) > 0:
+            actions = make_complex_decision(environment)
             environment.step(actions)
             await websocket.send(simulation_response(environment))
 

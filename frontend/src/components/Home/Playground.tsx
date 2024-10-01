@@ -4,10 +4,14 @@ import { OrchardComplex2D, WsSimulationUpdate } from '../../context/apiTypes'
 import { CircularProgress } from '@mui/material'
 import { OrchardComplex } from './OrchardComplex'
 
+const VIEW_WIDTH = 1000
+const VIEW_HEIGHT = 800
+const SCALE = 2
+
 export const Playground: React.FC = () => {
   const api = useWebsocketContext()
-  const [width, _setWidth] = useState(1000)
-  const [height, _setHeight] = useState(800)
+  const [width, _setWidth] = useState(VIEW_WIDTH * SCALE)
+  const [height, _setHeight] = useState(VIEW_HEIGHT * SCALE)
   const [numBots, _setNumBots] = useState(2)
   const [orchard, setOrchard] = useState<OrchardComplex2D | undefined>()
   const [stateUpdateQueue, setStateUpdateQueue] = useState<OrchardComplex2D[]>([])
@@ -43,7 +47,7 @@ export const Playground: React.FC = () => {
           <div>Time: {orchard.time}</div>
           <div>Apples: {orchard.starting_apples.length - orchard.apples.length}/{orchard.starting_apples.length}</div>
         </div>
-        <OrchardComplex data={orchard} />
+        <OrchardComplex data={orchard} scale={SCALE} />
       </div>
     </div>
   )

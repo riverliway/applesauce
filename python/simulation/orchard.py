@@ -23,7 +23,7 @@ class OrchardComplex2D:
   TREE_MISSING_PROBABILITY = 0.02
   APPLE_DIAMETER = [5, 10]
   # How many apples can be on a tree
-  ORCHARD_FERTILITY = [5, 20]
+  ORCHARD_FERTILITY = [20, 50]
 
   # How dense the apples can be placed in the orchard. This is value defines the probability function x^APPLE_DENSITY.
   APPLE_DENSITY = 5
@@ -32,8 +32,8 @@ class OrchardComplex2D:
   ROBOT_DIAMETER = 60
   # The speed of the robot in cm per tick
   ROBOT_MOVE_SPEED = 10 / TICK_SPEED
-  # The speed of the robot in degrees per tick
-  ROBOT_TURN_SPEED = 30 / TICK_SPEED
+  # The speed of the robot in radians per tick
+  ROBOT_TURN_SPEED = 30 * np.pi / 180 / TICK_SPEED
   # The diameter of the basket in cm
   BASKET_DIAMETER = 100
 
@@ -78,6 +78,7 @@ class OrchardComplex2D:
     self.height = validate_int(height)
     self.num_picker_bots = validate_int(num_picker_bots)
     self.num_pusher_bots = validate_int(num_pusher_bots)
+    self.num_baskets = validate_int(num_baskets)
     self.seed = validate_int(seed if seed is not None else np.random.randint(0, 1_000_000))
     np.random.seed(self.seed)
 
@@ -102,9 +103,9 @@ class OrchardComplex2D:
 
     self.trees = [
       {
-        'x': int(x + self.random_normal(*self.TREE_VARIATION)),
-        'y': int(y + self.random_normal(*self.TREE_VARIATION)),
-        'diameter': int(self.random_normal(*self.TREE_DIAMETER)),
+        'x': x + self.random_normal(*self.TREE_VARIATION),
+        'y': y + self.random_normal(*self.TREE_VARIATION),
+        'diameter': max(self.random_normal(*self.TREE_DIAMETER), 0),
         # The fertility of the tree is a value between 0 and 1
         'fertility': (noise_fertility([x / self.width, y / self.height]) + 1) / 2
       }
@@ -115,25 +116,38 @@ class OrchardComplex2D:
 
     self.bots = [
       {
-        'x': int(tree_row_dist // 2 + tree_row_dist * i),
-        'y': int(tree_col_dist // 2),
-        'holding': False,
+        'x': tree_row_dist // 2 + tree_row_dist * i,
+        'y': tree_col_dist // 2,
+        'holding': None,
         'job': 'picker' if i < self.num_picker_bots else 'pusher',
-        'diameter': int(self.ROBOT_DIAMETER)
+        'diameter': int(self.ROBOT_DIAMETER),
+        'orientation': np.random.rand() * np.pi * 2
       }
       for i in range(self.num_picker_bots + self.num_pusher_bots)
+    ]
+
+    self.baskets = [
+      {
+        'x': tree_row_dist // 2 + tree_row_dist * i,
+        'y': self.trees[-1]['y'] - tree_col_dist // 2,
+        'diameter': int(self.BASKET_DIAMETER),
+        'held': False
+      }
+      for i in range(self.num_baskets)
     ]
 
     # Generate the apples using polar coordinates
     self.apples = [
       {
-        'x': int(tree['x'] + radius * math.cos(theta)),
-        'y': int(tree['y'] + radius * math.sin(theta)),
-        'diameter': int(self.random_normal(*self.APPLE_DIAMETER))
+        'x': tree['x'] + radius * math.cos(theta),
+        'y': tree['y'] + radius * math.sin(theta),
+        'diameter': max(self.random_normal(*self.APPLE_DIAMETER), 0),
+        'held': False,
+        'collected': False
       }
       for tree in self.trees
       for theta, radius in [
-        (theta, 1 / np.random.rand() ** self.APPLE_DENSITY + tree['diameter'] / 2 + self.APPLE_DIAMETER[1])
+        (theta, (1 / (np.random.rand() ** self.APPLE_DENSITY)) + tree['diameter'] / 2 + self.APPLE_DIAMETER[1] * 2)
         for theta in self.__generate_angles(tree)
       ]
     ]
@@ -146,6 +160,7 @@ class OrchardComplex2D:
     ]
 
     self.starting_bots = [i for i in self.bots]
+    self.starting_baskets = [i for i in self.baskets]
     self.starting_trees = [i for i in self.trees]
     self.starting_apples = [i for i in self.apples]
 
@@ -171,16 +186,14 @@ class OrchardComplex2D:
 
     # Perform the bot locations
     for i, action in enumerate(actions):
-      if action == "up":
-        rewards[i] = self.__action_movement(i, 0, -1)
-      elif action == "down":
-        rewards[i] = self.__action_movement(i, 0, 1)
-      elif action == "left":
-        rewards[i] = self.__action_movement(i, -1, 0)
-      elif action == "right":
-        rewards[i] = self.__action_movement(i, 1, 0)
+      if action == "forward" or action == "backward":
+        rewards[i] = self.__action_forward(i, action)
+      elif action == "left" or action == "right":
+        rewards[i] = self.__action_rotate(i, action)
       elif action == "pick":
         rewards[i] = self.__action_pick(i)
+      elif action == "drop":
+        rewards[i] = self.__action_drop(i)
 
     # Update the time
     self.time += 1
@@ -197,23 +210,43 @@ class OrchardComplex2D:
     """
     return self.__policy_movement(x, y, diameter, None)[1]
   
-  def __action_movement(self, bot_idx: int, dx: int, dy: int) -> float:
+  def __action_forward(self, bot_idx: int, action: str) -> float:
     """
-    Moves the bot at the given index by the given dx and dy values.
+    Moves the bot at the given index by either forward or backward.
 
     :param: bot_idx [int] The index of the bot to move.
-    :param: dx [int] The change in x-coordinate.
-    :param: dy [int] The change in y-coordinate.
+    :param: action [str] The action to take. Can be either forward or backward.
 
     :return: [float] The reward for the current time step.
     """
 
-    new_location = (self.bot_locations[bot_idx][0] + dx, self.bot_locations[bot_idx][1] + dy)
-    reward, can_move_there = self.__policy_movement(new_location[0], new_location[1], self.bots[bot_idx]['diameter'], bot_idx)
+    direction = 1 if action == "forward" else -1
+
+    new_x = self.bots[bot_idx]['x'] + direction * self.ROBOT_MOVE_SPEED * math.cos(self.bots[bot_idx]['orientation'])
+    new_y = self.bots[bot_idx]['y'] + direction * self.ROBOT_MOVE_SPEED * math.sin(self.bots[bot_idx]['orientation'])
+
+    reward, can_move_there = self.__policy_movement(new_x, new_y, self.bots[bot_idx]['diameter'], bot_idx)
     if can_move_there:
-      self.bot_locations[bot_idx] = new_location
+      self.bot_locations[bot_idx]['x'] = new_x
+      self.bot_locations[bot_idx]['y'] = new_y
 
     return reward
+  
+  def __action_rotate(self, bot_idx: int, action: str) -> float:
+    """
+    Rotates the bot at the given index either left or right.
+
+    :param: bot_idx [int] The index of the bot to rotate.
+    :param: action [str] The action to take. Can be either left or right.
+
+    :return: [float] The reward for the current time step.
+    """
+
+    direction = 1 if action == "right" else -1
+
+    self.bots[bot_idx]['orientation'] += direction * self.ROBOT_TURN_SPEED
+
+    return self.NO_IMPACT_REWARD
   
   def __action_pick(self, bot_idx: int) -> float:
     """
@@ -224,16 +257,105 @@ class OrchardComplex2D:
     :return: [float] The reward for the current time step.
     """
 
-    bot_location = self.bot_locations[bot_idx]
-    # The bot can pick an apple if it is in one of the four adjacent locations
-    pick_locations = [(bot_location[0] + d[0], bot_location[1] + d[1]) for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+    bot = self.bots[bot_idx]
 
-    for pick_location in pick_locations:
-      if pick_location in self.apples:
-        self.apples.remove(pick_location)
-        return self.PICK_APPLE_REWARD
+    # If the bot is already holding something, then penalize it for trying to pick up something else
+    if bot['holding']:
+      return self.PICK_DUP_APPLE_PENALTY
+    
+    pick_target_idx = self.try_pick(bot_idx)
+
+    if pick_target_idx is None:
+      return self.PICK_NO_APPLE_PENALTY
+    
+    if bot['job'] == 'pusher':
+      self.baskets[pick_target_idx]['held'] = True
+    elif bot['job'] == 'picker':
+      self.apples[pick_target_idx]['held'] = True
+
+    self.bots[bot_idx]['holding'] = pick_target_idx
 
     return self.PICK_NO_APPLE_PENALTY
+  
+  def __action_drop(self, bot_idx: int) -> float:
+    """
+    Allows the bot to drop an apple if it is at the location of a basket.
+
+    :param: bot_idx [int] The index of the bot to drop the apple.
+
+    :return: [float] The reward for the current time step.
+    """
+
+    bot = self.bots[bot_idx]
+
+    # If the bot is not holding anything, then penalize it for trying to drop without holding
+    if bot['holding'] is None:
+      return self.DROP_NO_APPLE_PENALTY
+    
+    if bot['job'] == 'pusher':
+      self.baskets[bot['holding']]['held'] = False
+      self.bots[bot_idx]['holding'] = None
+
+      return self.NO_IMPACT_REWARD
+    elif bot['job'] == 'picker':
+      self.apples[bot['holding']]['held'] = False
+      self.bots[bot_idx]['holding'] = None
+
+      if self.can_drop(bot_idx):
+        self.apples[bot['holding']]['collected'] = True
+        return self.DROP_APPLE_REWARD
+      else:
+        return self.DROP_NO_BASKET_PENALTY
+      
+  def try_pick(self, bot_idx: int) -> int:
+    """
+    Returns the index of the apple or basket that the bot can pick up.
+
+    :param: bot_idx [int] The index of the bot to pick the apple.
+
+    :return: [dict] The index of the apple or basket that the bot can pick up.
+    Can be `None` if there isn't anything to pick up.
+    """
+    bot = self.bots[bot_idx]
+
+    # Get the location of the bot's nose
+    bot_nose_x = bot['x'] + bot['diameter'] / 2 * math.cos(bot['orientation'])
+    bot_nose_y = bot['y'] + bot['diameter'] / 2 * math.sin(bot['orientation'])
+
+    nearby_targets = [
+      i
+      for (i, target) in enumerate(self.baskets if bot['job'] == 'pusher' else self.apples)
+      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= (bot['diameter'] + target['diameter']) / 2
+        and not target['held']
+    ]
+
+    if len(nearby_targets) == 0:
+      return None
+    
+    return nearby_targets[0]
+  
+  def can_drop(self, bot_idx: int) -> bool:
+    """
+    Checks if the bot can drop an apple or basket.
+
+    :param: bot_idx [int] The index of the bot to drop the apple.
+
+    :return: [bool] True if the bot can drop the apple or basket, False otherwise.
+    """
+    bot = self.bots[bot_idx]
+
+    # Get the location of the bot's nose
+    bot_nose_x = bot['x'] + bot['diameter'] / 2 * math.cos(bot['orientation'])
+    bot_nose_y = bot['y'] + bot['diameter'] / 2 * math.sin(bot['orientation'])
+
+    nearby_targets = [
+      i
+      for (i, target) in self.baskets
+      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= (bot['diameter'] + target['diameter']) / 2
+        and not target['held']
+    ]
+
+    return len(nearby_targets) != 0
   
   def __policy_movement(self, x: int, y: int, diameter: int, bot_idx: int) -> tuple[float, bool]:
     """
@@ -288,6 +410,8 @@ class OrchardComplex2D:
       "seed": self.seed,
       "bots": self.bots,
       "starting_bots": self.starting_bots,
+      "baskets": self.baskets,
+      "starting_baskets": self.starting_baskets,
       "trees": self.trees,
       "starting_trees": self.starting_trees,
       "apples": self.apples,

@@ -15,6 +15,28 @@ export interface OrchardSimulation2D {
   time: number
 }
 
+export interface Tree {
+  x: number
+  y: number
+  diameter: number
+  fertility: number
+}
+
+export interface Bot {
+  x: number
+  y: number
+  job: 'picker' | 'pusher'
+  holding: boolean
+  diameter: number
+  orientation: number
+}
+
+export interface Apple {
+  x: number
+  y: number
+  diameter: number
+}
+
 export interface OrchardComplex2D {
   width: number
   height: number
@@ -22,41 +44,12 @@ export interface OrchardComplex2D {
   num_pusher_bots: number
   seed: number
   time: number
-  trees: Array<{
-    x: number
-    y: number
-    diameter: number
-    fertility: number
-  }>
-  bots: Array<{
-    x: number
-    y: number
-    job: 'picker' | 'pusher'
-    holding: boolean
-    diameter: number
-  }>
-  apples: Array<{
-    x: number
-    y: number
-    diameter: number
-  }>
-  starting_bots: Array<{
-    x: number
-    y: number
-    job: 'picker' | 'pusher'
-    diameter: number
-  }>
-  starting_trees: Array<{
-    x: number
-    y: number
-    diameter: number
-    fertility: number
-  }>
-  starting_apples: Array<{
-    x: number
-    y: number
-    diameter: number
-  }>
+  trees: Tree[]
+  bots: Bot[]
+  apples: Apple[]
+  starting_bots: Bot[]
+  starting_trees: Tree[]
+  starting_apples: Apple[]
 }
 
 export interface WsError {
