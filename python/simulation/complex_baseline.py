@@ -106,13 +106,13 @@ def smart_move(environment, bot_idx: int, goal_idx: int, goal_type: str) -> str:
     for side in (-1, 1)
   ])
 
-  if bot_blocked:
-    for scale in (10, 5, 2):
-      next_move = astar_basic(environment, bot_idx, goal, scale)
-      if next_move != 'idle':
-        return next_move
-    
-    return 'idle'
+  # if bot_blocked:
+  for scale in (10, 5, 2):
+    next_move = astar_basic(environment, bot_idx, goal, scale)
+    if next_move != 'idle':
+      return next_move
+  
+  return 'idle'
   
   # First check if turning the robot would help it face the target better
   angle_to_goal = math.atan2(goal['y'] - environment.bots[bot_idx]['y'], goal['x'] - environment.bots[bot_idx]['x'])

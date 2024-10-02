@@ -20,7 +20,7 @@ export const Playground: React.FC = () => {
     const callback = (m: WsSimulationUpdate) => stateUpdateRef.current = [...stateUpdateRef.current, m.simulation]
 
     api.register('simulation', callback)
-    api.startSimulation('complex', width, height, numBots)
+    api.startSimulation('complex', width, height, numBots, 13334)
 
     return () => api.unregister('simulation', callback)
   }, [])

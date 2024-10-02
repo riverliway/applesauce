@@ -246,7 +246,7 @@ class OrchardComplex2D:
 
     direction = 1 if action == "right" else -1
 
-    self.bots[bot_idx]['orientation'] = (self.bots[bot_idx]['orientation'] + direction * self.ROBOT_TURN_SPEED + np.pi) % (2 * np.pi) - np.pi
+    self.bots[bot_idx]['orientation'] = (self.bots[bot_idx]['orientation'] + direction * self.ROBOT_TURN_SPEED + 2 * np.pi) % (2 * np.pi)
 
     return self.NO_IMPACT_REWARD
   
