@@ -8,7 +8,7 @@ import { Timer } from '../Common/Timer'
 const VIEW_WIDTH = 1000
 const VIEW_HEIGHT = 800
 const SCALE = 2
-const SIM_DISPLAY_SPEED = 0.1
+const SIM_DISPLAY_SPEED = 0.05
 
 export const Playground: React.FC = () => {
   const api = useWebsocketContext()
