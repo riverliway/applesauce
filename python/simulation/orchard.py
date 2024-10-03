@@ -116,7 +116,7 @@ class OrchardComplex2D:
 
     self.bots = [
       {
-        'x': tree_row_dist // 2 + tree_row_dist * i,
+        'x': (tree_row_dist // 2 + tree_row_dist * (i // 2)) * (1 if i % 2 == 0 else -1) + (0 if i % 2 == 0 else self.width),
         'y': tree_col_dist // 2,
         'holding': None,
         'job': 'picker' if i < self.num_picker_bots else 'pusher',
@@ -128,7 +128,7 @@ class OrchardComplex2D:
 
     self.baskets = [
       {
-        'x': tree_row_dist // 2 + tree_row_dist * i,
+        'x': (tree_row_dist // 2 + tree_row_dist * (i // 2)) * (1 if i % 2 == 0 else -1) + (0 if i % 2 == 0 else self.width),
         'y': self.trees[-1]['y'] - tree_col_dist // 2,
         'diameter': int(self.BASKET_DIAMETER),
         'held': False,

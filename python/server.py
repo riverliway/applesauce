@@ -45,7 +45,13 @@ async def designator(websocket) -> None:
         environment = None
         sim_type = 'simple' if 'sim_type' not in message['params'] else message['params']['sim_type']
         if sim_type == 'complex':
-            environment = OrchardComplex2D(message['params']['width'], message['params']['height'], message['params']['num_bots'], seed=message['params']['seed'])
+            environment = OrchardComplex2D(
+              message['params']['width'],
+              message['params']['height'], 
+              message['params']['num_bots'], 
+              num_baskets=message['params']['num_baskets'], 
+              seed=message['params']['seed']
+            )
 
         if environment is None:
           environment = OrchardSimulation2D(message['params']['width'], message['params']['height'], message['params']['num_bots'])

@@ -13,7 +13,8 @@ export const Playground: React.FC = () => {
   const api = useWebsocketContext()
   const [width, _setWidth] = useState(VIEW_WIDTH * SCALE)
   const [height, _setHeight] = useState(VIEW_HEIGHT * SCALE)
-  const [numBots, _setNumBots] = useState(1)
+  const [numBots, _setNumBots] = useState(4)
+  const [numBaskets, _setNumBaskets] = useState(4)
   const [orchard, setOrchard] = useState<OrchardComplex2D | undefined>()
   const stateUpdateRef = useRef<OrchardComplex2D[]>([])
   const [startTime, _setStartTime] = useState(Date.now())
@@ -22,7 +23,7 @@ export const Playground: React.FC = () => {
     const callback = (m: WsSimulationUpdate) => stateUpdateRef.current = [...stateUpdateRef.current, m.simulation]
 
     api.register('simulation', callback)
-    api.startSimulation('complex', width, height, numBots, 13334)
+    api.startSimulation('complex', width, height, numBots, numBaskets, 13334)
 
     return () => api.unregister('simulation', callback)
   }, [])

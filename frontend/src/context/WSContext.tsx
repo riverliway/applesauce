@@ -18,7 +18,7 @@ export interface WebsocketContext {
   /**
    * Messages the backend to start a new simulation
    */
-  startSimulation: (simType: 'simple' | 'complex', width: number, height: number, numBots: number, seed: number) => void
+  startSimulation: (simType: 'simple' | 'complex', width: number, height: number, numBots: number, numBaskets: number, seed: number) => void
   /**
    * Registers a callback for a specific message type
    * @param messageType - the type of message to register for
@@ -104,13 +104,14 @@ export const WebsocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const value = {
     register,
     unregister,
-    startSimulation: (simType: 'simple' | 'complex', width: number, height: number, numBots: number, seed: number) => {
+    startSimulation: (simType: 'simple' | 'complex', width: number, height: number, numBots: number, numBaskets: number, seed: number) => {
       sendWsMessage({
         type: 'start-simulation',
         params: {
           width,
           height,
           num_bots: numBots,
+          num_baskets: numBaskets,
           seed,
           sim_type: simType
         }
