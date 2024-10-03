@@ -110,14 +110,15 @@ class OrchardComplex2D:
         'fertility': (noise_fertility([x / self.width, y / self.height]) + 1) / 2
       }
       for x in range(tree_row_dist, self.width - tree_row_dist // 2, tree_row_dist)
-      for y in range(tree_col_dist, self.height - tree_col_dist // 2, tree_col_dist)
+      for y in range(tree_col_dist * 2, self.height - tree_col_dist // 2, tree_col_dist)
       if (noise_tree([x / self.width, y / self.height]) + 1) / 2 > self.TREE_MISSING_PROBABILITY
     ]
 
+    bot_spacing = (self.width) // (self.num_picker_bots + self.num_pusher_bots + 1)
     self.bots = [
       {
-        'x': (tree_row_dist // 2 + tree_row_dist * (i // 2)) * (1 if i % 2 == 0 else -1) + (0 if i % 2 == 0 else self.width),
-        'y': tree_col_dist // 2,
+        'x': (i + 1) * bot_spacing,
+        'y': tree_col_dist // 2 + tree_col_dist,
         'holding': None,
         'job': 'picker' if i < self.num_picker_bots else 'pusher',
         'diameter': int(self.ROBOT_DIAMETER),
@@ -126,10 +127,11 @@ class OrchardComplex2D:
       for i in range(self.num_picker_bots + self.num_pusher_bots)
     ]
 
+    basket_spacing = (self.width) // (self.num_baskets + 1)
     self.baskets = [
       {
-        'x': (tree_row_dist // 2 + tree_row_dist * (i // 2)) * (1 if i % 2 == 0 else -1) + (0 if i % 2 == 0 else self.width),
-        'y': self.trees[-1]['y'] - tree_col_dist // 2,
+        'x': (i + 1) * basket_spacing,
+        'y': tree_col_dist // 2,
         'diameter': int(self.BASKET_DIAMETER),
         'held': False,
         'collected': False

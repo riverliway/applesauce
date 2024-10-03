@@ -4,12 +4,12 @@ import { mask } from './mask'
 
 interface OrchardComplexProps {
   data: OrchardComplex2D
+  pathDots?: [number, number][]
   scale: number
 }
 
 const DISPLAY_MASK = false
 const marking_dots: [number, number][] = []
-// const marking_dots: [number, number][] = [[190, 1140], [200, 1140], [210, 1140], [220, 1140], [230, 1140], [240, 1140], [250, 1140], [260, 1140], [270, 1140], [280, 1140], [290, 1140], [300, 1140], [310, 1140], [310, 1130], [310, 1120], [310, 1110], [310, 1100], [310, 1090], [310, 1080], [310, 1070], [310, 1060], [310, 1050], [310, 1040], [310, 1030], [310, 1020], [310, 1010], [310, 1000], [310, 990]]
 
 export const OrchardComplex: React.FC<OrchardComplexProps> = props => {
   return (
@@ -93,6 +93,18 @@ export const OrchardComplex: React.FC<OrchardComplexProps> = props => {
         <div
           key={i}
           className='absolute bg-slate-900 rounded-full'
+          style={{
+            width: 10 / props.scale,
+            height: 10 / props.scale,
+            top: (dot[1] - 5) / props.scale,
+            left: (dot[0] - 5) / props.scale
+          }}
+        />
+      ))}
+      {props.pathDots?.map((dot, i) => (
+        <div
+          key={i}
+          className='absolute bg-blue-800 rounded-full'
           style={{
             width: 10 / props.scale,
             height: 10 / props.scale,

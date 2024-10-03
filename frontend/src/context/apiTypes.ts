@@ -73,9 +73,15 @@ export interface WsSimulationUpdate {
   simulation: OrchardComplex2D
 }
 
-export type WsMessage = WsError | WsSimulationUpdate
+export interface WsPathUpdate {
+  type: 'path'
+  paths: Coord[]
+}
+
+export type WsMessage = WsError | WsSimulationUpdate | WsPathUpdate
 export type WsMessageType = WsMessage['type']
 export interface WsMessageTypeMap {
   error: WsError
   simulation: WsSimulationUpdate
+  path: WsPathUpdate
 }

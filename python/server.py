@@ -67,35 +67,56 @@ async def designator(websocket) -> None:
           decider = ComplexSolver(environment)
 
           while environment.time < SIMULATION_TIMEOUT and len([a for a in environment.apples if not a['collected']]) > 0:
-            sleep(0.009)
             new_env = decider.make_decisions()
             await websocket.send(simulation_response(new_env))
+            await websocket.send(decider_paths(decider.rough_paths))
 
     except:
       print(traceback.format_exc())
       await websocket.send(error('An error occurred'))
 
-def error(message: str) -> dict:
+def error(message: str) -> str:
   '''
   Creates an error response.
 
   :param: message [str] The error message.
 
-  :return: dict
+  :return: str
   '''
   return json.dumps({'type': 'error', 'message': message})
 
-def simulation_response(simulation: OrchardSimulation2D) -> dict:
+def simulation_response(simulation: OrchardSimulation2D) -> str:
   '''
   Creates a response for a simulation.
 
   :param: simulation The simulation to respond with.
 
-  :return: dict
+  :return: str
   '''
   return json.dumps({
     'type': 'simulation',
     'simulation': simulation.to_dict()
+  })
+
+def decider_paths(paths: list[list[tuple[int, int]]]) -> str:
+  '''
+  Creates a response for a decider.
+
+  :param: paths The paths to respond with.
+
+  :return: str
+  '''
+  if paths is None:
+    return json.dumps({
+      'type': 'path',
+      'paths': []
+    })
+  
+  valid_paths = [path for path in paths if path is not None]
+
+  return json.dumps({
+    'type': 'path',
+    'paths': [[p[0], p[1]] for path in valid_paths for p in path if p is not None]
   })
 
 async def main():

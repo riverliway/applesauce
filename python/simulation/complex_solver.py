@@ -46,6 +46,8 @@ class ComplexSolver:
 
     :return: [str] the action to take.
     """
+    self.__check_invalid_paths(bot_index)
+
     # If all apples have been collected, do nothing
     if len([apple for apple in self.environment.apples if not apple['collected']]) == 0:
       return 'idle'
@@ -72,7 +74,14 @@ class ComplexSolver:
     
     # If the bot already has a target, move towards it
     if self.targets[bot_index]['index'] is not None:
-      return self.__move_towards_target(bot_index, self.targets[bot_index])
+      # If the apple has been collected, find a new target
+      if self.targets[bot_index]['type'] == 'apple' and self.environment.apples[self.targets[bot_index]['index']]['collected']:
+        self.targets[bot_index] = {
+          'type': 'apple',
+          'index': None
+        }
+      else:
+        return self.__move_towards_target(bot_index, self.targets[bot_index])
     
     # Otherwise, find a new target
     new_target = self.__find_target(bot_index)
@@ -94,7 +103,12 @@ class ComplexSolver:
     """
     empty_hands = self.environment.bots[bot_idx]['holding'] is None
     targets = self.environment.apples if empty_hands else self.environment.baskets
-    valid_targets = [i for i, target in enumerate(targets) if not target['collected'] and not target['held']]
+    other_bot_targets = [target for i, target in enumerate(self.targets) if i != bot_idx]
+    valid_targets = [
+      i
+      for i, target in enumerate(targets)
+      if not target['collected'] and not target['held'] and i not in [t['index'] for t in other_bot_targets if empty_hands]
+    ]
 
     if len(valid_targets) == 0:
       return None
@@ -320,7 +334,7 @@ class ComplexSolver:
       for y in range(goal[1] - max_distance, goal[1] + max_distance + 1):
         current_distance = self.environment.distance(x * scale, y * scale, goal[0] * scale, goal[1] * scale)
         # Find all positions that are within 10% of the minimum distance
-        if check_valid(x, y) and abs(current_distance - min_distance) < min_distance * 0.1:
+        if check_valid(x, y) and abs(current_distance - min_distance) < min_distance * 0.25:
           goal_positions.append((x, y))
 
     return goal_positions
@@ -328,14 +342,40 @@ class ComplexSolver:
   def __create_astar_grid(self, bot_idx: int, scale: int) -> list[list[bool]]:
     """
     Creates a grid for the A* algorithm to use.
+    This function also makes it so that the path can't go through other bots.
 
     :param bot_idx: The index of the bot to move.
     :param scale: The scale of the grid to use.
 
     :return: [list[list[bool]]] the grid to use.
     """
+    grid = self.__create_astar_grid_base(scale)
+
+    def scale_num(num):
+      return int(num / scale)
+
+    for i, bot in enumerate(self.environment.bots):
+      if i == bot_idx:
+        continue
+
+      buffer_distance = bot['diameter'] / 2 + self.environment.bots[bot_idx]['diameter']
+      for x in range(scale_num(bot['x'] - buffer_distance) - 1, scale_num(bot['x'] + buffer_distance) + 2):
+        for y in range(scale_num(bot['y'] - buffer_distance) - 1, scale_num(bot['y'] + buffer_distance) + 2):
+          if self.environment.distance(x * scale, y * scale, bot['x'], bot['y']) < buffer_distance:
+            grid[x][y] = False
+
+    return grid
+  
+  def __create_astar_grid_base(self, scale: int) -> list[list[bool]]:
+    """
+    Creates a grid for the A* algorithm to use.
+
+    :param scale: The scale of the grid to use.
+
+    :return: [list[list[bool]]] the grid to use.
+    """
     if self.__astar_grid_storage is not None and self.__astar_grid_storage_scale == scale:
-      return self.__astar_grid_storage
+      return [[i for i in row] for row in self.__astar_grid_storage]
 
     self.__astar_grid_storage = [[True] * (self.environment.height // scale) for _ in range(self.environment.width // scale)]
 
@@ -346,17 +386,36 @@ class ComplexSolver:
       buffer_distance = tree['diameter'] / 2 + self.environment.ROBOT_DIAMETER
       for x in range(scale_num(tree['x'] - buffer_distance) - 1, scale_num(tree['x'] + buffer_distance) + 2):
         for y in range(scale_num(tree['y'] - buffer_distance) - 1, scale_num(tree['y'] + buffer_distance) + 2):
-          if not self.environment.distance(x * scale, y * scale, tree['x'], tree['y']) > buffer_distance:
+          if self.environment.distance(x * scale, y * scale, tree['x'], tree['y']) < buffer_distance:
             self.__astar_grid_storage[x][y] = False
 
     for basket in self.environment.baskets:
       buffer_distance = basket['diameter'] / 2 + self.environment.ROBOT_DIAMETER
       for x in range(scale_num(basket['x'] - buffer_distance) - 1, scale_num(basket['x'] + buffer_distance) + 2):
         for y in range(scale_num(basket['y'] - buffer_distance) - 1, scale_num(basket['y'] + buffer_distance) + 2):
-          if not self.environment.distance(x * scale, y * scale, basket['x'], basket['y']) > buffer_distance:
+          if self.environment.distance(x * scale, y * scale, basket['x'], basket['y']) < buffer_distance:
             self.__astar_grid_storage[x][y] = False
 
-    return self.__astar_grid_storage
+    return [[i for i in row] for row in self.__astar_grid_storage]
+  
+  def __check_invalid_paths(self, bot_idx: int) -> None:
+    """
+    Checks all of the other rough paths to see if this bot's position invalidates them.
+
+    :param bot_idx: The index of the bot to check.
+
+    :return: [None]
+    """
+
+    bot_radius = self.environment.bots[bot_idx]['diameter'] * 1.5
+    for index, path in enumerate(self.rough_paths):
+      if index == bot_idx:
+        continue
+
+      if path is not None and len(path) > 0:
+        for point in path:
+          if self.environment.distance(self.environment.bots[bot_idx]['x'], self.environment.bots[bot_idx]['y'], point[0], point[1]) < bot_radius:
+            self.rough_paths[index] = None
   
   def __get_nose(self, bot_idx: int) -> tuple[int, int]:
     """
