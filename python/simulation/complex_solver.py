@@ -235,12 +235,17 @@ class ComplexSolver:
     target_object = self.environment.apples[target['index']] if target['type'] == 'apple' else self.environment.baskets[target['index']]
     grid = self.__create_astar_grid(bot_idx, scale)
     
-    goal = self.__find_closest_valid_goal_position(grid, (target_object['x'], target_object['y']), scale)    
+    goal = (int(target_object['x'] / scale), int(target_object['y'] / scale))
     print(goal)
-    start = self.__find_closest_valid_goal_position(grid, self.__get_nose(bot_idx), scale)
+    goal_positions = self.__find_closest_valid_goal_positions(grid, (target_object['x'], target_object['y']), scale)    
+    print(goal_positions)
+    start = self.__find_closest_valid_goal_positions(grid, self.__get_nose(bot_idx), scale)
     print(start)
 
     def find_neighbors(loc):
+      if loc in goal_positions:
+        return [goal]
+
       neighbors = [(loc[0] + d[0], loc[1] + d[1]) for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
       return [
         n
@@ -249,7 +254,7 @@ class ComplexSolver:
       ]
 
     path = find_path(
-      start,
+      start[0],
       goal,
       neighbors_fnct=find_neighbors,
       distance_between_fnct=lambda loc1, loc2: abs(loc1[0] - loc2[0]) + abs(loc1[1] - loc2[1])
@@ -261,22 +266,22 @@ class ComplexSolver:
     # Only return half of the path to avoid the bot getting stuck
     return [(p[0] * scale, p[1] * scale) for i, p in enumerate(path) if i % 4 == 0]
   
-  def __find_closest_valid_goal_position(self, grid: list[list[bool]], goal: tuple[float, float], scale: int) -> tuple[int, int]:
+  def __find_closest_valid_goal_positions(self, grid: list[list[bool]], goal: tuple[float, float], scale: int) -> list[tuple[int, int]]:
     """
-    Finds the closest box on the grid that is valid to be a goal position.
+    Finds the closest boxes on the grid that are valid to be a goal position.
 
     :param grid: The grid to search.
     :param goal: The goal to move towards.
     :param scale: The scale of the grid to use.
 
-    :return: [tuple[int, int]] the closest valid goal position at the scale specified.
+    :return: [list[tuple[int, int]]] the closest valid goal positions at the scale specified.
     """
 
     goal = (int(goal[0] / scale), int(goal[1] / scale))
     approx = (0, 0)
 
     if grid[goal[0]][goal[1]]:
-      return goal
+      return [goal]
     
     def check_valid(x, y):
       return x >= 0 and y >= 0 and x < len(grid) and y < len(grid[0]) and grid[x][y]
@@ -303,15 +308,22 @@ class ComplexSolver:
     # Then, find if there is a closer valid position using Euclidean distance
     max_distance = math.ceil(self.environment.distance(approx[0], approx[1], goal[0], goal[1]))
     min_distance = max_distance
-    min_position = approx
     for x in range(goal[0] - max_distance, goal[0] + max_distance + 1):
       for y in range(goal[1] - max_distance, goal[1] + max_distance + 1):
         current_distance = self.environment.distance(x * scale, y * scale, goal[0] * scale, goal[1] * scale)
         if check_valid(x, y) and current_distance < min_distance:
           min_distance = current_distance
-          min_position = (x, y)
 
-    return min_position
+    # Then, find all position that are (approximately) the same distance away
+    goal_positions = []
+    for x in range(goal[0] - max_distance, goal[0] + max_distance + 1):
+      for y in range(goal[1] - max_distance, goal[1] + max_distance + 1):
+        current_distance = self.environment.distance(x * scale, y * scale, goal[0] * scale, goal[1] * scale)
+        # Find all positions that are within 10% of the minimum distance
+        if check_valid(x, y) and abs(current_distance - min_distance) < min_distance * 0.1:
+          goal_positions.append((x, y))
+
+    return goal_positions
   
   def __create_astar_grid(self, bot_idx: int, scale: int) -> list[list[bool]]:
     """
