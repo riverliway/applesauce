@@ -76,6 +76,7 @@ export interface WsSimulationUpdate {
 export interface WsPathUpdate {
   type: 'path'
   paths: Coord[]
+  time: number
 }
 
 export type WsMessage = WsError | WsSimulationUpdate | WsPathUpdate

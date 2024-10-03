@@ -226,12 +226,12 @@ class ComplexSolver:
     :return: [list[tuple[int, int]]] the path to follow.
     """
 
-    for scale in [10, 5, 2]:
-      print(f'Running A* with scale {scale}')
-      path = self.__astar_grid(bot_idx, target, scale)
-      if path is not None:
-        print([*path, (self.environment.apples[target['index']]['x'], self.environment.apples[target['index']]['y'])])
-        return path
+    scale = 10
+    print(f'Running A* with scale {scale}')
+    path = self.__astar_grid(bot_idx, target, scale)
+    if path is not None:
+      print([*path, (self.environment.apples[target['index']]['x'], self.environment.apples[target['index']]['y'])])
+      return path
       
     return None
 
@@ -278,7 +278,7 @@ class ComplexSolver:
       return None
 
     # Only return half of the path to avoid the bot getting stuck
-    return [(p[0] * scale, p[1] * scale) for i, p in enumerate(path) if i % 4 == 0]
+    return [(p[0] * scale, p[1] * scale) for i, p in enumerate(path) if i % 2 == 0]
   
   def __find_closest_valid_goal_positions(self, grid: list[list[bool]], goal: tuple[float, float], scale: int) -> list[tuple[int, int]]:
     """
@@ -361,7 +361,7 @@ class ComplexSolver:
       buffer_distance = bot['diameter'] / 2 + self.environment.bots[bot_idx]['diameter']
       for x in range(scale_num(bot['x'] - buffer_distance) - 1, scale_num(bot['x'] + buffer_distance) + 2):
         for y in range(scale_num(bot['y'] - buffer_distance) - 1, scale_num(bot['y'] + buffer_distance) + 2):
-          if self.environment.distance(x * scale, y * scale, bot['x'], bot['y']) < buffer_distance:
+          if x >= 0 and y >= 0 and x < len(grid) and y < len(grid[0]) and self.environment.distance(x * scale, y * scale, bot['x'], bot['y']) < buffer_distance:
             grid[x][y] = False
 
     return grid

@@ -69,7 +69,7 @@ async def designator(websocket) -> None:
           while environment.time < SIMULATION_TIMEOUT and len([a for a in environment.apples if not a['collected']]) > 0:
             new_env = decider.make_decisions()
             await websocket.send(simulation_response(new_env))
-            await websocket.send(decider_paths(decider.rough_paths))
+            await websocket.send(decider_paths(decider.rough_paths, new_env.time))
 
     except:
       print(traceback.format_exc())
@@ -98,7 +98,7 @@ def simulation_response(simulation: OrchardSimulation2D) -> str:
     'simulation': simulation.to_dict()
   })
 
-def decider_paths(paths: list[list[tuple[int, int]]]) -> str:
+def decider_paths(paths: list[list[tuple[int, int]]], time: int) -> str:
   '''
   Creates a response for a decider.
 
@@ -109,14 +109,16 @@ def decider_paths(paths: list[list[tuple[int, int]]]) -> str:
   if paths is None:
     return json.dumps({
       'type': 'path',
-      'paths': []
+      'paths': [],
+      'time': time
     })
   
   valid_paths = [path for path in paths if path is not None]
 
   return json.dumps({
     'type': 'path',
-    'paths': [[p[0], p[1]] for path in valid_paths for p in path if p is not None]
+    'paths': [[p[0], p[1]] for path in valid_paths for p in path if p is not None],
+    'time': time
   })
 
 async def main():

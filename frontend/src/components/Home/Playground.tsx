@@ -8,7 +8,7 @@ import { Timer } from '../Common/Timer'
 const VIEW_WIDTH = 1000
 const VIEW_HEIGHT = 800
 const SCALE = 2
-const SIM_DISPLAY_SPEED = 0.05
+const SIM_DISPLAY_SPEED = 0.1
 
 export const Playground: React.FC = () => {
   const api = useWebsocketContext()
@@ -18,21 +18,20 @@ export const Playground: React.FC = () => {
   const [numBots, _setNumBots] = useState(4)
   const [numBaskets, _setNumBaskets] = useState(4)
   const [orchard, setOrchard] = useState<OrchardComplex2D | undefined>()
-  const [pathDots, setPathDots] = useState<Coord[]>([])
+  const [pathDots, setPathDots] = useState<{ point: Coord[], time: number }[]>([])
   const stateUpdateRef = useRef<OrchardComplex2D[]>([])
   const [startTime, _setStartTime] = useState(Date.now())
 
   useEffect(() => {
     const callback = (m: WsSimulationUpdate) => {
-      setOrchard(m.simulation)
-      // stateUpdateRef.current = [...stateUpdateRef.current, m.simulation]
-      // if (tickSpeed === undefined) {
-      //   setTickSpeed(m.simulation.TICK_SPEED)
-      // }
+      stateUpdateRef.current = [...stateUpdateRef.current, m.simulation]
+      if (tickSpeed === undefined) {
+        setTickSpeed(m.simulation.TICK_SPEED)
+      }
     }
 
     const pathsCallback = (m: WsPathUpdate) => {
-      setPathDots(m.paths)
+      setPathDots(pd => [...pd, { point: m.paths, time: m.time }])
     }
 
     api.register('simulation', callback)
@@ -45,22 +44,22 @@ export const Playground: React.FC = () => {
     }
   }, [])
 
-  // const updateState = (): void => {
-  //   if (stateUpdateRef.current.length > 0) {
-  //     setOrchard(stateUpdateRef.current[0])
-  //     stateUpdateRef.current = stateUpdateRef.current.slice(1)
-  //   }
-  // }
+  const updateState = (): void => {
+    if (stateUpdateRef.current.length > 0) {
+      setOrchard(stateUpdateRef.current[0])
+      stateUpdateRef.current = stateUpdateRef.current.slice(1)
+    }
+  }
 
-  // useEffect(() => {
-  //   if (tickSpeed === undefined) {
-  //     return
-  //   }
+  useEffect(() => {
+    if (tickSpeed === undefined) {
+      return
+    }
 
-  //   const clear = setInterval(updateState, 1000 / tickSpeed * SIM_DISPLAY_SPEED)
+    const clear = setInterval(updateState, 1000 / tickSpeed * SIM_DISPLAY_SPEED)
 
-  //   return () => clearInterval(clear)
-  // }, [tickSpeed])
+    return () => clearInterval(clear)
+  }, [tickSpeed])
 
   if (orchard === undefined) {
     return <CircularProgress />
@@ -78,7 +77,7 @@ export const Playground: React.FC = () => {
           </div>
           <div>Apples: {orchard.apples.filter(a => a.collected).length}/{orchard.apples.length}</div>
         </div>
-        <OrchardComplex data={orchard} scale={SCALE} pathDots={pathDots} />
+        <OrchardComplex data={orchard} scale={SCALE} pathDots={pathDots.find(pd => pd.time === orchard.time)?.point} />
       </div>
     </div>
   )
