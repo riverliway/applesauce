@@ -5,6 +5,7 @@ import json
 import traceback
 from websockets.asyncio.server import serve
 from dotenv import dotenv_values
+from time import sleep
 
 from simulation.orchard import *
 from simulation.simple_solver import make_simple_decision
@@ -61,6 +62,7 @@ async def designator(websocket) -> None:
           decider = ComplexSolver(environment)
 
           while environment.time < SIMULATION_TIMEOUT and len([a for a in environment.apples if not a['collected']]) > 0:
+            sleep(0.009)
             new_env = decider.make_decisions()
             await websocket.send(simulation_response(new_env))
 

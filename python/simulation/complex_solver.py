@@ -16,6 +16,10 @@ class ComplexSolver:
     # provided by the A* algorithm. The paths are recalculated every time the bot gets a new target
     # or the path becomes invalid.
     self.rough_paths: list[tuple[float, float]] = [None] * len(self.environment.bots)
+
+    # The grid used for the A* algorithm. It is only calculated once and then reused for each bot.
+    self.__astar_grid_storage = None
+    self.__astar_grid_storage_scale = 10
   
   def make_decisions(self):
     """
@@ -118,6 +122,7 @@ class ComplexSolver:
     """
     goal = self.__get_goal_coords(bot_idx, target)
     print(goal)
+    # print(self.__create_astar_grid(bot_idx, 10))
     print((self.environment.bots[bot_idx]['x'], self.environment.bots[bot_idx]['y']))
 
     nose_x, nose_y = self.__get_nose(bot_idx)
@@ -180,8 +185,14 @@ class ComplexSolver:
       nose = self.__get_nose(bot_idx)
 
       # If the bot is within 2 steps of the next point in the path, go to the next point
-      while len(self.rough_paths[bot_idx]) > 0 and self.environment.distance(nose[0], nose[1], self.rough_paths[bot_idx][0][0], self.rough_paths[bot_idx][0][1]) < self.environment.ROBOT_MOVE_SPEED * 2:
+      dist_to_next = self.environment.distance(nose[0], nose[1], self.rough_paths[bot_idx][0][0], self.rough_paths[bot_idx][0][1])
+      cutoff = self.environment.ROBOT_MOVE_SPEED * 2 if len(self.rough_paths[bot_idx]) == 1 else self.environment.distance(self.rough_paths[bot_idx][0][0], self.rough_paths[bot_idx][0][1], self.rough_paths[bot_idx][1][0], self.rough_paths[bot_idx][1][1]) / 2
+      while len(self.rough_paths[bot_idx]) > 0 and dist_to_next < cutoff:
         self.rough_paths[bot_idx].pop(0)
+
+        if len(self.rough_paths[bot_idx]) > 0:
+          dist_to_next = self.environment.distance(nose[0], nose[1], self.rough_paths[bot_idx][0][0], self.rough_paths[bot_idx][0][1])
+          cutoff = self.environment.ROBOT_MOVE_SPEED * 2 if len(self.rough_paths[bot_idx]) == 1 else self.environment.distance(self.rough_paths[bot_idx][0][0], self.rough_paths[bot_idx][0][1], self.rough_paths[bot_idx][1][0], self.rough_paths[bot_idx][1][1]) / 2
 
     # Find the actual coordiantes where the bot should be moving towards
     target_object = self.environment.apples[target['index']] if target['type'] == 'apple' else self.environment.baskets[target['index']]
@@ -205,6 +216,7 @@ class ComplexSolver:
       print(f'Running A* with scale {scale}')
       path = self.__astar_grid(bot_idx, target, scale)
       if path is not None:
+        print([*path, (self.environment.apples[target['index']]['x'], self.environment.apples[target['index']]['y'])])
         return path
       
     return None
@@ -221,31 +233,23 @@ class ComplexSolver:
     :return: [list[tuple[int, int]]] the path to follow
     """
     target_object = self.environment.apples[target['index']] if target['type'] == 'apple' else self.environment.baskets[target['index']]
-    goal = (int(target_object['x'] / scale), int(target_object['y'] / scale))
     grid = self.__create_astar_grid(bot_idx, scale)
-
-    print(grid)
+    
+    goal = self.__find_closest_valid_goal_position(grid, (target_object['x'], target_object['y']), scale)    
     print(goal)
+    start = self.__find_closest_valid_goal_position(grid, self.__get_nose(bot_idx), scale)
+    print(start)
 
     def find_neighbors(loc):
-      # To avoid the basket collision interfering with the pathfinding,
-      # If the bot is within 20% of the goal radius, it is at the goal
-      if math.hypot(goal[0] - loc[0], goal[1] - loc[1]) < target_object['diameter'] / 2 * 1.2:
-        return [goal]
-
       neighbors = [(loc[0] + d[0], loc[1] + d[1]) for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
       return [
         n
         for n in neighbors
-        if grid[n[0]][n[1]]
+        if n[0] >= 0 and n[1] >= 0 and n[0] < len(grid) and n[1] < len(grid[0]) and grid[n[0]][n[1]]
       ]
-    
-    nose = self.__get_nose(bot_idx)
-
-    print((int(nose[0] / scale), int(nose[1] / scale)))
 
     path = find_path(
-      (int(nose[0] / scale), int(nose[1] / scale)),
+      start,
       goal,
       neighbors_fnct=find_neighbors,
       distance_between_fnct=lambda loc1, loc2: abs(loc1[0] - loc2[0]) + abs(loc1[1] - loc2[1])
@@ -255,7 +259,59 @@ class ComplexSolver:
       return None
 
     # Only return half of the path to avoid the bot getting stuck
-    return [(p[0] * scale, p[1] * scale) for i, p in enumerate(path) if i % 2 == 0]
+    return [(p[0] * scale, p[1] * scale) for i, p in enumerate(path) if i % 4 == 0]
+  
+  def __find_closest_valid_goal_position(self, grid: list[list[bool]], goal: tuple[float, float], scale: int) -> tuple[int, int]:
+    """
+    Finds the closest box on the grid that is valid to be a goal position.
+
+    :param grid: The grid to search.
+    :param goal: The goal to move towards.
+    :param scale: The scale of the grid to use.
+
+    :return: [tuple[int, int]] the closest valid goal position at the scale specified.
+    """
+
+    goal = (int(goal[0] / scale), int(goal[1] / scale))
+    approx = (0, 0)
+
+    if grid[goal[0]][goal[1]]:
+      return goal
+    
+    def check_valid(x, y):
+      return x >= 0 and y >= 0 and x < len(grid) and y < len(grid[0]) and grid[x][y]
+
+    # First, find the closest valid position using the expanding box method
+    for d in range(1, max(len(grid), len(grid[0]))):
+      for i in range(-d, d + 1):
+        # Top
+        if check_valid(goal[0] + i, goal[1] - d):
+          approx = (goal[0] + i, goal[1] + d)
+        
+        # Bottom
+        if check_valid(goal[0] + i, goal[1] + d):
+          approx = (goal[0] + i, goal[1] + d)
+        
+        # Left
+        if check_valid(goal[0] - d, goal[1] + i):
+          approx = (goal[0] - d, goal[1] + i)
+        
+        # Right
+        if check_valid(goal[0] + d, goal[1] + i):
+          approx = (goal[0] + d, goal[1] + i)
+
+    # Then, find if there is a closer valid position using Euclidean distance
+    max_distance = math.ceil(self.environment.distance(approx[0], approx[1], goal[0], goal[1]))
+    min_distance = max_distance
+    min_position = approx
+    for x in range(goal[0] - max_distance, goal[0] + max_distance + 1):
+      for y in range(goal[1] - max_distance, goal[1] + max_distance + 1):
+        current_distance = self.environment.distance(x * scale, y * scale, goal[0] * scale, goal[1] * scale)
+        if check_valid(x, y) and current_distance < min_distance:
+          min_distance = current_distance
+          min_position = (x, y)
+
+    return min_position
   
   def __create_astar_grid(self, bot_idx: int, scale: int) -> list[list[bool]]:
     """
@@ -266,22 +322,29 @@ class ComplexSolver:
 
     :return: [list[list[bool]]] the grid to use.
     """
-    grid = [[True] * (self.environment.height // scale) for _ in range(self.environment.width // scale)]
+    if self.__astar_grid_storage is not None and self.__astar_grid_storage_scale == scale:
+      return self.__astar_grid_storage
+
+    self.__astar_grid_storage = [[True] * (self.environment.height // scale) for _ in range(self.environment.width // scale)]
 
     def scale_num(num):
       return int(num / scale)
 
     for tree in self.environment.trees:
-      for x in range(scale_num(tree['x'] - tree['diameter'] / 2) - 1, scale_num(tree['x'] + tree['diameter'] / 2) + 2):
-        for y in range(scale_num(tree['y'] - tree['diameter'] / 2) - 1, scale_num(tree['y'] + tree['diameter'] / 2) + 2):
-          grid[x][y] = self.environment.is_valid_location(x * scale, y * scale, self.environment.ROBOT_DIAMETER, bot_idx)
+      buffer_distance = tree['diameter'] / 2 + self.environment.ROBOT_DIAMETER
+      for x in range(scale_num(tree['x'] - buffer_distance) - 1, scale_num(tree['x'] + buffer_distance) + 2):
+        for y in range(scale_num(tree['y'] - buffer_distance) - 1, scale_num(tree['y'] + buffer_distance) + 2):
+          if not self.environment.distance(x * scale, y * scale, tree['x'], tree['y']) > buffer_distance:
+            self.__astar_grid_storage[x][y] = False
 
     for basket in self.environment.baskets:
-      for x in range(scale_num(basket['x'] - basket['diameter'] / 2) - 1, scale_num(basket['x'] + basket['diameter'] / 2) + 2):
-        for y in range(scale_num(basket['y'] - basket['diameter'] / 2) - 1, scale_num(basket['y'] + basket['diameter'] / 2) + 2):
-          grid[x][y] = self.environment.is_valid_location(x * scale, y * scale, self.environment.ROBOT_DIAMETER, bot_idx)
+      buffer_distance = basket['diameter'] / 2 + self.environment.ROBOT_DIAMETER
+      for x in range(scale_num(basket['x'] - buffer_distance) - 1, scale_num(basket['x'] + buffer_distance) + 2):
+        for y in range(scale_num(basket['y'] - buffer_distance) - 1, scale_num(basket['y'] + buffer_distance) + 2):
+          if not self.environment.distance(x * scale, y * scale, basket['x'], basket['y']) > buffer_distance:
+            self.__astar_grid_storage[x][y] = False
 
-    return grid
+    return self.__astar_grid_storage
   
   def __get_nose(self, bot_idx: int) -> tuple[int, int]:
     """
