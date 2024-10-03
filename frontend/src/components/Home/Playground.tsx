@@ -3,6 +3,7 @@ import { useWebsocketContext } from '../../context/WSContext'
 import { OrchardComplex2D, WsSimulationUpdate } from '../../context/apiTypes'
 import { CircularProgress } from '@mui/material'
 import { OrchardComplex } from './OrchardComplex'
+import { Timer } from '../Common/Timer'
 
 const VIEW_WIDTH = 1000
 const VIEW_HEIGHT = 800
@@ -15,6 +16,7 @@ export const Playground: React.FC = () => {
   const [numBots, _setNumBots] = useState(1)
   const [orchard, setOrchard] = useState<OrchardComplex2D | undefined>()
   const stateUpdateRef = useRef<OrchardComplex2D[]>([])
+  const [startTime, _setStartTime] = useState(Date.now())
 
   useEffect(() => {
     const callback = (m: WsSimulationUpdate) => stateUpdateRef.current = [...stateUpdateRef.current, m.simulation]
@@ -47,8 +49,11 @@ export const Playground: React.FC = () => {
   return (
     <div className='w-full h-full flex flex-col justify-center items-center'>
       <div className='flex flex-col justify-center items-center w-5/6 h-5/6'>
-        <div className='flex flex-row w-full justify-between items-center'>
-          <div>Time: {Math.floor(timeSeconds)}.{(timeSeconds * 10) % 10}s</div>
+        <div className='flex flex-row justify-between items-center' style={{ width: 1000 }}>
+          <div>
+            <div className='flex flex-row gap-2'>Real Time: <Timer time={(Date.now() - startTime) / 1000} /></div>
+            <div className='flex flex-row gap-2'>Simulated Time: <Timer time={timeSeconds} /></div>
+          </div>
           <div>Apples: {orchard.apples.filter(a => a.collected).length}/{orchard.apples.length}</div>
         </div>
         <OrchardComplex data={orchard} scale={SCALE} />
