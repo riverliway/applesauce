@@ -69,7 +69,7 @@ export const Playground: React.FC = () => {
 
   return (
     <div className='w-full h-full flex flex-col justify-center items-center'>
-      <div className='flex flex-col justify-center items-center w-5/6 h-5/6'>
+      <div className='flex flex-col justify-center items-center'>
         <div className='flex flex-row justify-between items-center' style={{ width: 1000 }}>
           <div>
             <div className='flex flex-row gap-2'>Real Time: <Timer time={(Date.now() - startTime) / 1000} /></div>
