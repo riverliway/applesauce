@@ -9,7 +9,6 @@ from time import sleep
 
 from simulation.orchard import *
 from simulation.simple_solver import make_simple_decision
-from simulation.complex_baseline import make_complex_decision
 from simulation.complex_solver import ComplexSolver
 
 SIMULATION_TIMEOUT = 100000
