@@ -281,7 +281,7 @@ class OrchardComplex2D:
 
     self.bots[bot_idx]['holding'] = pick_target_idx
 
-    return self.PICK_NO_APPLE_PENALTY
+    return self.PICK_APPLE_REWARD
   
   def __action_drop(self, bot_idx: int) -> float:
     """
