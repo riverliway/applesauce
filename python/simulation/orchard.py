@@ -233,8 +233,6 @@ class OrchardComplex2D:
     if can_move_there:
       self.bots[bot_idx]['x'] = new_x
       self.bots[bot_idx]['y'] = new_y
-    else:
-      raise Exception(f"Bot {bot_idx} tried to move to an invalid location")
 
     return reward
   
