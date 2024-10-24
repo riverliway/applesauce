@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import websockets
 from websockets.sync.client import connect
 
 def hello():

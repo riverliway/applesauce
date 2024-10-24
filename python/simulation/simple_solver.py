@@ -9,9 +9,16 @@ def make_simple_decision(environment) -> list[str]:
   :return: list[str] The decisions for each bot.
   """
 
-  decisions = ['idle'] * environment.num_bots
+  decisions = ['idle'] * environment.num_picker_bots
   
-  pickable_locations = [(apple_loc[0] + d[0], apple_loc[1] + d[1]) for apple_loc in environment.apples for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+  #pickable locations is a list ot tuples of x,y coordinates of the apples
+  #d is added to indicate that the bot can pick the apple 
+  #from one cube above, below, or to either side of it.
+  pickable_locations = [(apple_loc[0] + d[0], apple_loc[1] + d[1]) 
+                        for apple_loc in environment.apples 
+                        for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+  
+  #bot_locations is a list of (x,y) tuples indicating the location per bot
   for index, bot_location in enumerate(environment.bot_locations):
     # If there are no apples, do nothing
     if len(environment.apples) == 0:
