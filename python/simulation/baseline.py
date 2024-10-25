@@ -62,6 +62,6 @@ for i in range(num_sims):
     apples, starting_apples, ticks = get_baseline_complex(seed = num_sims) #sets the random seed differently each time based on the number of sims
     simulation_results.append((apples, starting_apples, ticks))
 
-avg_collection_time = simulation_results[:][2].mean()
+avg_collection_time = sum(result[2] for result in simulation_results) / len(simulation_results)
 
 print(f'Average collection time from {num_sims} simulations: {avg_collection_time}')
