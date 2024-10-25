@@ -5,7 +5,7 @@ from simple_solver import make_simple_decision
 from complex_solver import ComplexSolver
 
 num_sims = 100
-seed = 10
+seed = 10 
 SIMULATION_TIMEOUT = 40000
 
 def get_baseline_complex(height = 1600,
@@ -14,7 +14,7 @@ def get_baseline_complex(height = 1600,
                 num_pusher_bots = 0,
                 num_baskets = 4,
                 threshold = 0.95,
-                seed = 10):
+                seed = seed):
     '''
     Runs a simulation for OrchardComplex2D and reports the baseline
     for a single set of initialization parameters.
@@ -53,10 +53,13 @@ def get_baseline_complex(height = 1600,
 
 get_baseline_complex()
 
+# Loop through a bunch of different simulations
+
+# List to record results
 simulation_results = []
 
 for i in range(num_sims):
-    apples, starting_apples, ticks = get_baseline_complex()
+    apples, starting_apples, ticks = get_baseline_complex(seed = num_sims) #sets the random seed differently each time based on the number of sims
     simulation_results.append((apples, starting_apples, ticks))
 
 avg_collection_time = simulation_results[:][2].mean()
