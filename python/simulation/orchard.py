@@ -461,7 +461,7 @@ class OrchardComplex2D:
     """
 
     data = json.loads(json_str)
-    sim = OrchardSimulation2D(data["width"], data["height"])
+    sim = OrchardComplex2D(data["width"], data["height"])
 
     sim.num_bots = data["num_bots"]
     sim.seed = data["seed"]
@@ -534,7 +534,6 @@ def validate_int(value) -> int:
     raise ValueError(f"Expected an integer, but got {type(value)}")
 
   return value
-
 
 class OrchardSimulation2D:
   """
@@ -788,17 +787,3 @@ class OrchardSimulation2D:
     sim.time = data["time"]
 
     return sim
-  
-def validate_int(value) -> int:
-  """
-  Validates that the given value is an integer.
-
-  :param: value The value to validate.
-
-  :return: int
-  """
-
-  if not isinstance(value, int):
-    raise ValueError(f"Expected an integer, but got {type(value)}")
-
-  return value
