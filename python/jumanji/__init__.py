@@ -106,6 +106,9 @@ register(id="Cleaner-v0", entry_point="jumanji.environments:Cleaner")
 # Connector with grid size of 10 and 10 agents.
 register(id="Connector-v2", entry_point="jumanji.environments:Connector")
 
+# Multi-agent Connector with grid size of 10 and 10 agents.
+register(id="MaConnector-v2", entry_point="jumanji.environments:MaConnector")
+
 # MMST with 3 agents, 36 nodes, 72 edges, 4 nodes to connect per agent, and a time limit of 70.
 register(id="MMST-v0", entry_point="jumanji.environments:MMST")
 
@@ -139,4 +142,10 @@ register(id="PacMan-v1", entry_point="jumanji.environments:PacMan")
 # SlidingTilePuzzle - A sliding tile puzzle environment with the default grid size of 5x5.
 register(
     id="SlidingTilePuzzle-v0", entry_point="jumanji.environments:SlidingTilePuzzle"
+)
+
+# LevelBasedForaging  with a random generator with 8 grid size,
+# 2 agents and 2 food items and the maximum agent's level is 2.
+register(
+    id="LevelBasedForaging-v0", entry_point="jumanji.environments:LevelBasedForaging"
 )
