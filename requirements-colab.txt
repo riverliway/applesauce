@@ -434,7 +434,6 @@ requirements-parser==0.9.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.3
-rliable @ git+https://github.com/google-research/rliable@3ccd9f4dea577a04d3d2b557f259aac08badbd81
 rmm-cu12==24.10.0
 rpds-py==0.20.0
 rsa==4.9
