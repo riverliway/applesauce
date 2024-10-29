@@ -41,7 +41,6 @@ bqplot==0.12.43
 branca==0.8.0
 bravado==11.0.3
 bravado-core==6.1.1
-brax==0.10.3
 CacheControl==0.14.0
 cachetools==5.5.0
 catalogue==2.0.10
@@ -180,7 +179,7 @@ grpcio==1.64.1
 grpcio-status==1.48.2
 gspread==6.0.2
 gspread-dataframe==3.3.1
-gym==0.25.2
+gym==0.26.2
 gym-notices==0.0.8
 gymnasium==1.0.0
 gymnax==0.0.8
