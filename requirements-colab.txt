@@ -132,7 +132,6 @@ fsspec==2024.6.1
 future==1.0.0
 gast==0.6.0
 gcsfs==2024.6.1
-GDAL==3.6.4
 gdown==5.2.0
 geemap==0.34.5
 gensim==4.3.3
