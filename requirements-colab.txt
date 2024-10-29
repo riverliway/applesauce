@@ -439,7 +439,6 @@ rich==13.9.3
 rliable @ git+https://github.com/google-research/rliable@3ccd9f4dea577a04d3d2b557f259aac08badbd81
 rmm-cu12==24.10.0
 rpds-py==0.20.0
-rpy2==3.4.2
 rsa==4.9
 s3transfer==0.10.3
 safetensors==0.4.5
