@@ -7,7 +7,8 @@ import jax
 from jax import numpy as jnp
 
 ### NEED TO UPDATE FOR OUR CODE ###
-from types import SimpleOrchardApple, SimpleOrchardState
+# from our modified files
+from .types import SimpleOrchardApple, SimpleOrchardState
 
 # This replaces the RandomGenerator class
 class SimpleOrchardGenerator:

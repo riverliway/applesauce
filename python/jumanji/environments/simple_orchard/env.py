@@ -10,13 +10,16 @@ import matplotlib
 from numpy.typing import NDArray
 
 ### NEED TO UPDATE FOR OUR CODE ###
+# from our modified files
+from .constants import MOVES
+from .generator import SimpleOrchardGenerator
+from .observer import SimpleOrchardObserver
+from .types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState
+
+# directly from jumanji
 import jumanji.environments.routing.lbf.utils as utils
 from jumanji import specs
 from jumanji.env import Environment
-from jumanji.environments.routing.lbf.constants import MOVES
-from jumanji.environments.routing.lbf.generator import RandomGenerator
-from jumanji.environments.routing.lbf.observer import GridObserver, VectorObserver
-from jumanji.environments.routing.lbf.types import Food, Observation, State
 from jumanji.environments.routing.lbf.viewer import LevelBasedForagingViewer
 from jumanji.types import TimeStep, restart, termination, transition, truncation
 from jumanji.viewer import Viewer

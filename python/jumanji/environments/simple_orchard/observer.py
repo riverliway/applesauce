@@ -8,16 +8,18 @@ import jax
 import jax.numpy as jnp
 
 ### NEED TO UPDATE FOR OUR CODE ###
+# from our modified files
+from .constants import MOVES
+from .types import (
+    SimpleOrchardEntity,
+    SimpleOrchardApple,
+    SimpleOrchardObservation,
+    SimpleOrchardState,
+)
+# directly from jumanji 
 from jumanji import specs
 from jumanji.environments.routing.lbf import utils
-from jumanji.environments.routing.lbf.constants import MOVES
-from jumanji.environments.routing.lbf.types import (
-    Agent,
-    Entity,
-    Food,
-    Observation,
-    State,
-)
+
 
 # This replaces VectorObserver(LbfObserver) Class
 # Instead of the class & sub-class structure they had to allow for grid and vector observation, we opted for a single vector observation
