@@ -9,8 +9,8 @@ import jax.numpy as jnp
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from .constants import MOVES
-from .types import (
+from constants import MOVES
+from orchard_types import (
     SimpleOrchardEntity,
     SimpleOrchardApple,
     SimpleOrchardObservation,
