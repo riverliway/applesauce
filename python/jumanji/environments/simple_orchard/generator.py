@@ -7,7 +7,7 @@ import jax
 from jax import numpy as jnp
 
 ### NEED TO UPDATE FOR OUR CODE ###
-from jumanji.environments.routing.lbf.types import Agent, Food, State
+from types import SimpleOrchardApple, SimpleOrchardState
 
 # This replaces the RandomGenerator class
 class SimpleOrchardGenerator:
