@@ -14,6 +14,6 @@
 
 
 ### NEED TO UPDATE FOR OUR CODE ###
-from jumanji.environments.routing.lbf.env import LevelBasedForaging
-from jumanji.environments.routing.lbf.observer import GridObserver, VectorObserver
-from jumanji.environments.routing.lbf.types import Agent, Food, Observation, State
+from simple_orchard.env import SimpleOrchard
+from simple_orchard.observer import SimpleOrchardObserver
+from simple_orchard.types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState
