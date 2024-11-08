@@ -337,7 +337,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         def is_eaten(agent: SimpleOrchardEntity, apple: SimpleOrchardApple) -> chex.Array:
             """Return 1 if the agent is adjacent to the food, else 0."""
             return jax.lax.select(
-                self.are_entities_adjacent(agent, apple) & ~food.collected,
+                self.are_entities_adjacent(agent, apple) & ~apple.collected,
                 1,
                 0,
             )
