@@ -14,6 +14,6 @@
 
 
 ### NEED TO UPDATE FOR OUR CODE ###
-from simple_orchard.env import SimpleOrchard
-from simple_orchard.observer import SimpleOrchardObserver
-from simple_orchard.types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState
+from env import SimpleOrchard
+from observer import SimpleOrchardObserver
+from types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState
