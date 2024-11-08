@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 from constants import MOVES
 from generator import SimpleOrchardGenerator
 from observer import SimpleOrchardObserver
-from orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState
+from orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardEntity
 
 # directly from jumanji
 import jumanji.environments.routing.lbf.utils as utils
