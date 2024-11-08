@@ -41,8 +41,8 @@ def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
     generator = SimpleOrchardGenerator(width=width, height=height, num_bots=num_bots, num_trees=num_trees, num_apples=num_apples)
  
     # making the environments
-    train_env = jumanji.make('SimpleOrchard-v0', generator=generator)
-    eval_env = jumanji.make('SimpleOrchard-v0', generator=generator)
+    train_env = jumanji.make(env_name, generator=generator)
+    eval_env = jumanji.make(env_name, generator=generator)
 
     # adding the wrappers that log evaluation metrics.
     train_env = RecordEpisodeMetrics(train_env)
