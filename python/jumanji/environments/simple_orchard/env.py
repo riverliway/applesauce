@@ -343,7 +343,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         adj_loading_agents_levels = jax.vmap(is_eaten, (0, None))(agents, apple) # ERIK ADD ############################################
 
         # If the food has already been eaten or is not loaded, the sum will be equal to 0
-        is_food_eaten_this_step = jnp.sum(adj_loading_agents_levels) >= 0
+        is_food_eaten_this_step = jnp.sum(adj_loading_agents_levels) > 0
 
         # Set food to eaten if it was eaten.
         new_food = apple.replace(collected=is_food_eaten_this_step | apple.collected)  # type: ignore
