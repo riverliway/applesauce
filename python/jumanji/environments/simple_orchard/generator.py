@@ -2,7 +2,7 @@
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from .orchard_types import SimpleOrchardApple, SimpleOrchardState
+from orchard_types import SimpleOrchardApple, SimpleOrchardState
 
 from typing import Tuple
 
