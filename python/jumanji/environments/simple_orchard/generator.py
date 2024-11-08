@@ -1,14 +1,14 @@
 ### The following has been adapted from `jumanji/jumanji/environments/routing/lbf/generator.py ####
 
+### NEED TO UPDATE FOR OUR CODE ###
+# from our modified files
+from .orchard_types import SimpleOrchardApple, SimpleOrchardState
+
 from typing import Tuple
 
 import chex
 import jax
 from jax import numpy as jnp
-
-### NEED TO UPDATE FOR OUR CODE ###
-# from our modified files
-from orchard_types import SimpleOrchardApple, SimpleOrchardState
 
 # This replaces the RandomGenerator class
 class SimpleOrchardGenerator:
