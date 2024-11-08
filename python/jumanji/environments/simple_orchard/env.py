@@ -181,8 +181,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         return state, timestep
 
-    ## FROM UTIL FILE AND BROUGHT IN ##
-    ## adapted for width and height, naming conventions
+# Copied from `lbf.utils.py`
+# adapted for width and height, naming conventions
     def _simulate_agent_movement(
         self, agent: SimpleOrchardEntity, action: chex.Array, apples: SimpleOrchardApple, agents: SimpleOrchardEntity
     ) -> SimpleOrchardEntity:
@@ -226,8 +226,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             position=new_agent_position
         )
 
-   # UTILS
-   # Copy
+# Copied from `lbf.utils.py`
     def _flag_duplicates(self, a: chex.Array) -> chex.Array:
         """Return a boolean array indicating which elements of `a` are duplicates.
 
@@ -241,8 +240,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         )
         return ~(counts[indices] == 1)
 
-# UTIL
-# COPY
+# Copied from `lbf.utils.py`
+# adapted naming conventions
     def _fix_collisions(self, moved_agents: SimpleOrchardEntity, original_agents: SimpleOrchardEntity) -> SimpleOrchardEntity:
         """
         Fix collisions in the moved agents by resolving conflicts with the original agents.
@@ -274,8 +273,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         )
         return agents
 
-# UTIL
-# naming conventions
+# Copied from `lbf.utils.py`
+# adapted naming conventions
     def _update_agent_positions(
         self, agents: SimpleOrchardEntity, actions: chex.Array, apples: SimpleOrchardApple
     ) -> Any:
@@ -303,8 +302,9 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         return moved_agents
 
-# UTIL COPY
-    def _are_entities_adjacent(self, entity_a: SimpleOrchardEntity, entity_b: SimpleOrchardEntity) -> chex.Array:
+# Copied from `lbf.utils.py`
+# adapted naming conventions
+    def are_entities_adjacent(self, entity_a: SimpleOrchardEntity, entity_b: SimpleOrchardEntity) -> chex.Array:
         """
         Check if two entities are adjacent in the grid.
 
@@ -316,9 +316,12 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             chex.Array: True if entities are adjacent, False otherwise.
         """
         distance = jnp.abs(entity_a.position - entity_b.position)
-        return jnp.where(jnp.sum(distance) == 1, True, False)
+        print("Entity distances:", distance)
+        return jnp.sum(distance) == 1
 
-# UTIL COPY BUT WITH HEAVY MODIFICATIONS
+# Copied from `lbf.utils.py`
+# UTIL COPY BUT WITH HEAVY MODIFICATIONS, 
+# LIKELY SOURCE FOR TRAINING ISSUES. . . 
     def _eat_food(self, agents: SimpleOrchardEntity, apple: SimpleOrchardApple) -> Tuple[SimpleOrchardApple, chex.Array]:
         """Try to eat the provided food if possible.
 
@@ -331,16 +334,18 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             is_food_eaten_this_step (chex.Array): Whether or not the food was eaten at this step.
         """
 
-        def is_eaten(agent: SimpleOrchardEntity, food: SimpleOrchardApple) -> chex.Array:
+        def is_eaten(agent: SimpleOrchardEntity, apple: SimpleOrchardApple) -> chex.Array:
             """Return 1 if the agent is adjacent to the food, else 0."""
             return jax.lax.select(
-                self._are_entities_adjacent(agent, food) & ~food.collected, #ERIK ADD #################################################
+                self.are_entities_adjacent(agent, apple) & ~food.collected,
                 1,
                 0,
             )
 
         # Get the level of all adjacent agents that are trying to load the food
-        adj_loading_agents_levels = jax.vmap(is_eaten, (0, None))(agents, apple) # ERIK ADD ############################################
+        ###### BASED ON HOW we have this set up we are not including whether the agents
+        ###### trying to load food. 
+        adj_loading_agents_levels = jax.vmap(is_eaten, (0, None))(agents, apple)
 
         # If the food has already been eaten or is not loaded, the sum will be equal to 0
         is_food_eaten_this_step = jnp.sum(adj_loading_agents_levels) > 0
@@ -350,7 +355,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         return new_food, is_food_eaten_this_step
 
-# COPY
+# Copied from `lbf.utils.py`
+# adapted naming conventions
     def step(self, state: SimpleOrchardState, actions: chex.Array) -> Tuple[SimpleOrchardState, TimeStep]:
         """Simulate one step of the environment.
 
@@ -376,7 +382,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         state = SimpleOrchardState(
             bots=moved_agents,
             apples=new_apples,
-            trees=state.trees, ############ERIK ADD######################################
+            trees=state.trees,
             time=state.time + 1,
             key=state.key,
         )
@@ -423,7 +429,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         percent_eaten = (n_eaten / self.num_apples) * 100
         return {"percent_eaten": percent_eaten}
 
-# MODIFIED CODE FROM ORIGINAL. LIKELY CAUSE OF SHAPE ISSUE.
+# MODIFIED CODE FROM ORIGINAL. 
     def get_reward(
         self,
         apples: SimpleOrchardApple,
@@ -458,10 +464,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0))(
             apples, eaten_this_step
         )
-        print("reward_per_food shape before sum:", reward_per_food.shape)
-        print("after sum:", jnp.sum(reward_per_food, axis=0).shape)
         return jnp.sum(reward_per_food, axis=0) #, keepdims=True).reshape(4, 3)
- # copied and renamed
+ 
  # removed levels
     def observation_spec(self) -> specs.Spec[Observation]:
         """Specifications of the observation of the environment.
@@ -473,6 +477,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         return self._observer.observation_spec(
             self.time_limit,
         )
+    
  # copied and renamed
     def action_spec(self) -> specs.MultiDiscreteArray:
         """Returns the action spec for the Level Based Foraging environment.
@@ -485,6 +490,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             dtype=jnp.int32,
             name="action",
         )
+    
  # copied and renamed
     def reward_spec(self) -> specs.Array:
         """Returns the reward specification for the `LevelBasedForaging` environment.
@@ -495,6 +501,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             specs.Array: Reward specification, of shape (num_agents,) for the  environment.
         """
         return specs.Array(shape=(self.num_bots,), dtype=float, name="reward")
+    
  # copied and renamed
     def discount_spec(self) -> specs.BoundedArray:
         """Describes the discount returned by the environment.
@@ -509,6 +516,3 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             maximum=1.0,
             name="discount",
         )
-
-
-###### Erik added to the class for rendering purposes ##############################
