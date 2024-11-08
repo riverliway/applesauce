@@ -1,7 +1,8 @@
-### The following has been adapted from `jumanji/jumanji/environments/routing/lbf/env.py ####
+### The following has been adapted from `jumanji/jumanji/environments/routing/lbf/env.py` ####
+### This also includes functions that were brought over from `jumanji/jumanji/environments/routing/lbf/utils.py`
 
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Tuple, Union
+from typing import Dict, Optional, Sequence, Tuple, Union, Any
 
 import chex
 import jax
