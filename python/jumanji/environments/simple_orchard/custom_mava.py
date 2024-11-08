@@ -1,12 +1,17 @@
 # this contains modifications to mava functions necessary for us to work with our apple orchard environment. 
 
-
+# importing packages
+from typing import Tuple
 from omegaconf import DictConfig
-from generator import SimpleOrchardGenerator
 import jumanji
+from mava.types import MarlEnv
 from mava.wrappers import (
     RecordEpisodeMetrics
 )
+
+# our custom packages
+from generator import SimpleOrchardGenerator
+
 
 # This function replaces functionality of Mava's `mava.utils.make_env` functionality. 
 # right now this just contains the RecordEpisodeMetrics wrapper and does not contain an equivalent
