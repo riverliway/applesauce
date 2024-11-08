@@ -20,10 +20,15 @@ from orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOr
 # directly from jumanji
 import jumanji.environments.routing.lbf.utils as utils
 from jumanji import specs
-from jumanji.env import Environment
+from jumanji.env import Environment, specs
 from jumanji.environments.routing.lbf.viewer import LevelBasedForagingViewer
 from jumanji.types import TimeStep, restart, termination, transition, truncation
 from jumanji.viewer import Viewer
+
+# we are still calling Observation in functions so importing. Assuming this needs to be addressed.
+from mava.types import Observation
+
+
 
 # replaces `LevelBasedForaging` Class
 # why removal of specs.MultiDiscreteArray, Observation from class arguments?
