@@ -12,10 +12,10 @@ from numpy.typing import NDArray
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from constants import MOVES
-from generator import SimpleOrchardGenerator
-from observer import SimpleOrchardObserver
-from orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardEntity
+from jumanji_env.environments.simple_orchard.constants import MOVES
+from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
+from jumanji_env.environments.simple_orchard.observer import SimpleOrchardObserver
+from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardEntity
 
 # directly from jumanji
 import jumanji.environments.routing.lbf.utils as utils
