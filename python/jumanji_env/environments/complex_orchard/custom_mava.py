@@ -10,7 +10,7 @@ from mava.wrappers import (
 )
 
 # our custom packages
-from generator import SimpleOrchardGenerator
+from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
 
 
 # This function replaces functionality of Mava's `mava.utils.make_env` functionality. 

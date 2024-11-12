@@ -2,7 +2,7 @@
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from orchard_types import SimpleOrchardApple, SimpleOrchardState, SimpleOrchardEntity
+from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardState, SimpleOrchardEntity
 
 from typing import Tuple
 
