@@ -12,7 +12,7 @@ from mava.wrappers import (
     RecordEpisodeMetrics
 )
 # pulling in the Jumanji mult-agent wrapper
-from mava.wrappers.jumanji import MultiAgentWrapper
+from mava.wrappers.jumanji import JumanjiMarlWrapper
 
 # our custom packages
 from generator import SimpleOrchardGenerator
@@ -61,7 +61,7 @@ def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
 
 # This function replaces the functionality of Mavas `mava.wrappers.jumanji.LbfWrapper` functionality. 
 # Only update necessary was to change the environment type to SimpleOrchard. 
-class SimpeOrchardWrapper(MultiAgentWrapper):
+class SimpeOrchardWrapper(JumanjiMarlWrapper):
     """
      Multi-agent wrapper for the Level-Based Foraging environment.
 
@@ -92,7 +92,7 @@ class SimpeOrchardWrapper(MultiAgentWrapper):
 
         # Create a new observation with adjusted step count
         modified_observation = Observation(
-            agents_view=timestep.observation.agents_view,
+            agents_view=timestep.observation.agents_view.astype(float),
             action_mask=timestep.observation.action_mask,
             step_count=jnp.repeat(timestep.observation.step_count, self._num_agents),
         )
