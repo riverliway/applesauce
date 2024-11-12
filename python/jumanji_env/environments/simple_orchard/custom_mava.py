@@ -61,7 +61,7 @@ def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
 
 # This function replaces the functionality of Mavas `mava.wrappers.jumanji.LbfWrapper` functionality. 
 # Only update necessary was to change the environment type to SimpleOrchard. 
-class SimpeOrchardWrapper(JumanjiMarlWrapper):
+class SimpleOrchardWrapper(JumanjiMarlWrapper):
     """
      Multi-agent wrapper for the Level-Based Foraging environment.
 
