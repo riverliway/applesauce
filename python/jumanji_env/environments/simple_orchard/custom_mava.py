@@ -15,8 +15,8 @@ from mava.wrappers import (
 from mava.wrappers.jumanji import JumanjiMarlWrapper
 
 # our custom packages
-from generator import SimpleOrchardGenerator
-from env import SimpleOrchard
+from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
+from jumanji_env.environments.simple_orchard.env import SimpleOrchard
 
 # This function replaces functionality of Mava's `mava.utils.make_env` functionality. 
 # right now this just contains the RecordEpisodeMetrics wrapper and does not contain an equivalent
