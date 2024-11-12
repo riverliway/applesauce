@@ -71,7 +71,11 @@ class SimpleOrchardWrapper(JumanjiMarlWrapper):
         sum reward otherwise.
     """
 
-    def __init__(self, env: SimpleOrchard, use_individual_rewards: bool = False):
+    def __init__(self, 
+                 env: SimpleOrchard, 
+                 add_global_state: bool = False,
+                 use_individual_rewards: bool = False,
+                ):
         super().__init__(env, add_global_state)
         self._env: SimpleOrchard
         self._use_individual_rewards = use_individual_rewards
