@@ -29,7 +29,7 @@ def distances_between_entities(
 
   :return: The distance between the target entities and the other entities. Shape: (num_target_entities, num_other_entities)
   """
-  dist_calc = lambda target, other: jnp.linalg.norm(target - other, axis=1)
+  dist_calc = lambda target, other: jnp.linalg.norm(target.position - other.position, axis=1)
 
   return jax.vmap(dist_calc, in_axes=(0, None))(target_entities, other_entities)
 
@@ -84,12 +84,32 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
   new_backward_positions: JaxArray['num_bots', 3] = jnp.pad(new_backward_positions, (0, 1), constant_values=1)[:-1]
 
   new_positions: JaxArray['num_bots', 2, 3] = jnp.stack([new_forward_positions, new_backward_positions], axis=1)
-  new_x = new_positions[:, :, 0]
-  new_y = new_positions[:, :, 1]
+  new_x: JaxArray['num_bots', 2] = new_positions[:, :, 0]
+  new_y: JaxArray['num_bots', 2] = new_positions[:, :, 1]
+
+  # Create new entities with the new positions to check if they are intersecting with the other entities
+  # These entities are not added to the state because they're just used for calculations
+  new_bots = jax.vmap(ComplexOrchardEntity)(
+    id=jnp.arange(num_bots * 2),
+    position=new_positions[:, :, 0:2].reshape((4 * 2, 2)),
+    diameter=jnp.repeat(state.bots.diameter, 2),
+  )
+
+  is_intersecting_trees: JaxArray['num_bots * 2', 'num_trees'] = are_any_intersecting(new_bots, state.trees)
+  is_intersecting_baskets: JaxArray['num_bots * 2', 'num_baskets'] = are_any_intersecting(new_bots, state.baskets)
+
+  # Check if each bot is intersecting with any other bot (including itself)
+  is_intersecting_other_bots: JaxArray['num_bots * 2', 'num_bots'] = are_intersecting(new_bots, state.bots)
+
+  # Now mask out the bots that are intersecting with themselves
+  mask: JaxArray['num_bots * 2', 'num_bots'] = jnp.repeat(jnp.eye(4, dtype=jnp.bool), 2, axis=0)
+  is_intersecting_other_bots: JaxArray['num_bots * 2'] = jnp.any(is_intersecting_other_bots & (~mask), axis=1)
 
   # Check if the bot is within the bounds
-  is_possible = (new_x >= 0) & (new_y <= state.width) & (new_x >= 0) & (new_y <= state.height)
+  is_within_bounds: JaxArray['num_bots', 2] = (new_x >= 0) & (new_y <= state.width) & (new_x >= 0) & (new_y <= state.height)
+  is_intersecting: JaxArray['num_bots * 2'] = is_intersecting_trees | is_intersecting_baskets | is_intersecting_other_bots
+  is_possible: JaxArray['num_bots', 2] = (~is_intersecting.reshape((num_bots), 2)) & is_within_bounds
 
-  new_positions = new_positions.at[:, :, 2].set(is_possible)
+  new_positions: JaxArray['num_bots', 2, 3] = new_positions.at[:, :, 2].set(is_possible)
 
   return new_positions
