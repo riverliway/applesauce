@@ -78,4 +78,4 @@ class SimpleOrchardObservation(NamedTuple):
     # in the format (num_agents, [apple[i].position[0], apple[i].position[1], ..., bot[i].position[0], bot[i].position[1], ...])
     agents_view: chex.Array # (num_agents, 2 * (num_apples + num_trees + num_bots))
     action_mask: chex.Array # (num_agents, 6) since there are 6 actions in the simple env [UP, DOWN, LEFT, RIGHT, PICK, IDLE]
-    time: chex.Array # ()
+    step_count: chex.Array # ()
