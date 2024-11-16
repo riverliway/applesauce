@@ -13,6 +13,7 @@ from jumanji_env.environments.complex_orchard.constants import (
     BASKET_DIAMETER,
     APPLE_DIAMETER,
     APPLE_DENSITY,
+    JaxArray
 )
 
 from typing import Tuple
@@ -45,7 +46,7 @@ class ComplexOrchardGenerator:
     self.num_baskets = num_baskets
 
   @staticmethod
-  def random_normal(key: chex.PRNGKey, shape: Tuple[int], bounds: Tuple[float, float]) -> chex.Array:
+  def random_normal(key: chex.PRNGKey, shape: Tuple[int], bounds: Tuple[float, float]) -> JaxArray['...shape']:
     """
     Generates a random normal distribution with the given shape and a bound defining 99% of the values.
 
@@ -62,7 +63,7 @@ class ComplexOrchardGenerator:
     choices = jax.random.normal(key, shape) / 6 * (bounds[1] - bounds[0]) + bounds[0]
     return jnp.clip(choices, bounds[0] - dist, bounds[1] + dist)
 
-  def sample_trees(self, key: chex.PRNGKey, tree_row_distance: float, tree_col_distance: float) -> Tuple[chex.Array, chex.Array, chex.Array]:
+  def sample_trees(self, key: chex.PRNGKey, tree_row_distance: float, tree_col_distance: float) -> Tuple[JaxArray['num_trees', 2], JaxArray['num_trees'], JaxArray['num_trees']]:
     """
     Randomly place trees ensuring no trees are placed on the edge and no two trees are adjacent
 
@@ -97,12 +98,12 @@ class ComplexOrchardGenerator:
   def sample_apples(
     self,
     key: chex.PRNGKey,
-    tree_positions: chex.Array,
-    tree_fertility: chex.Array,
-    tree_diameter: chex.Array,
-    obs_positions: chex.Array,
-    obs_diameter: chex.Array
-  ) -> Tuple[chex.Array, chex.Array, chex.Array, chex.Array]:
+    tree_positions: JaxArray['num_trees', 2],
+    tree_fertility: JaxArray['num_trees'],
+    tree_diameter: JaxArray['num_trees'],
+    obs_positions: JaxArray['num_obs', 2],
+    obs_diameter: JaxArray['num_obs']
+  ) -> Tuple[JaxArray['num_apples', 2], JaxArray['num_apples'], JaxArray['num_apples'], JaxArray['num_apples']]:
     """
     Randomly place apples on the grid.
 
@@ -128,7 +129,7 @@ class ComplexOrchardGenerator:
 
     max_apple_size = APPLE_DIAMETER[1] * 2
 
-    def create_apples(theta: float, num_apples: int, tree_pos: chex.Array, tree_diameter: float) -> Tuple[chex.Array, chex.Array]:
+    def create_apples(theta: float, num_apples: int, tree_pos: JaxArray[2], tree_diameter: float) -> JaxArray['max_num_apples', 2]:
       """
       This is a function that generates the apple positions for a single tree.
       It will get vmaped over to generate the apple positions for all trees.
@@ -138,7 +139,7 @@ class ComplexOrchardGenerator:
       :param tree_pos: The x and y position of the tree
       :param tree_diameter: The diameter of the tree
 
-      Returns: A tuple of the x and y positions of the apples
+      Returns: an array of the apple positions
       """
 
       # We always generate the maximum number of apples and then set the positions of the unused apples to be out of bounds
@@ -164,7 +165,7 @@ class ComplexOrchardGenerator:
     apple_x = apple_positions[::2]
     apple_y = apple_positions[1::2]
 
-    def check_in_obstacle(apple_x: float, apple_y: float, obs_x: chex.Array, obs_y: chex.Array, obs_diameter: chex.Array) -> bool:
+    def check_in_obstacle(apple_x: float, apple_y: float, obs_x: JaxArray['num_obs'], obs_y: JaxArray['num_obs'], obs_diameter: JaxArray['num_obs']) -> bool:
       """
       This function checks if an apple is in any of the obstacles.
 
@@ -192,7 +193,7 @@ class ComplexOrchardGenerator:
 
     return apple_positions, apple_diameters, apple_collected, apple_held
   
-  def sample_bots(self, tree_col_distance: float) -> Tuple[chex.Array, chex.Array, chex.Array, chex.Array, chex.Array]:
+  def sample_bots(self, tree_col_distance: float) -> Tuple[JaxArray['num_bots', 2], JaxArray['num_bots'], JaxArray['num_bots'], JaxArray['num_bots'], JaxArray['num_bots']]:
     """
     Always place the bots at the top of the grid, evenly spaced.
 
@@ -219,7 +220,7 @@ class ComplexOrchardGenerator:
 
     return bot_positions, bot_diameters, bot_holding, bot_jobs, bot_orientations
   
-  def sample_baskets(self, tree_col_distance: float) -> Tuple[chex.Array, chex.Array, chex.Array]:
+  def sample_baskets(self, tree_col_distance: float) -> Tuple[JaxArray['num_baskets', 2], JaxArray['num_baskets'], JaxArray['num_baskets']]:
     """
     Always place the baskets at the top of the grid, evenly spaced.
 
@@ -304,6 +305,8 @@ class ComplexOrchardGenerator:
     return ComplexOrchardState(
       key=key,
       time=time,
+      width=jnp.array(self.width, jnp.int32),
+      height=jnp.array(self.height, jnp.int32),
       bots=bots,
       trees=trees,
       apples=apples,

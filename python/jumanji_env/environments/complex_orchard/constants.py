@@ -1,6 +1,12 @@
 ### The following has been adapted from `jumanji/jumanji/environments/routing/lbf/constants.py ####
 # The viewer constants were removed from the script
 import jax.numpy as jnp
+from typing import TypeAlias
+
+# This is a type alias for Jax Arrays so we can specify the shape of the arrays
+# Ignore the actual value of this variable, it is only used for type hinting
+# Use the JaxArray in the type hinting like: JaxArray['num_rows', 'num_cols', etc...]
+JaxArray: TypeAlias = dict
 
 # Actions
 NOOP = 0
