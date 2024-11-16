@@ -87,7 +87,7 @@ class SimpleOrchardWrapper(JumanjiMarlWrapper):
         team_reward = jnp.sum(timestep.reward)
 
         # Repeat the aggregated reward for each agent.
-        reward = jnp.repeat(team_reward, self._num_agents)
+        reward = jnp.repeat(team_reward, self.num_agents)
         return timestep.replace(observation=observation, reward=reward)
 
     def modify_timestep(self, timestep: TimeStep) -> TimeStep[Observation]:
