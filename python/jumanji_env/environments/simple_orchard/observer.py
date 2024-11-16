@@ -63,7 +63,7 @@ class SimpleOrchardObserver:
         return SimpleOrchardObservation(
             agents_view=agents_view,
             action_mask=action_mask,
-            steup_count=state.step_count,
+            step_count=state.step_count,
         )
     # same
     def observation_spec(self, time_limit: int) -> specs.Spec[SimpleOrchardObservation]:
