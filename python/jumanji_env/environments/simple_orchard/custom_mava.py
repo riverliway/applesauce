@@ -63,7 +63,7 @@ def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
 # Only update necessary was to change the environment type to SimpleOrchard. 
 class SimpleOrchardWrapper(JumanjiMarlWrapper):
     """
-     Multi-agent wrapper for the Level-Based Foraging environment.
+     Multi-agent wrapper for our SimpleOrchard environment.
 
     Args:
         env (Environment): The base environment.
@@ -98,7 +98,7 @@ class SimpleOrchardWrapper(JumanjiMarlWrapper):
         modified_observation = Observation(
             agents_view=timestep.observation.agents_view.astype(float),
             action_mask=timestep.observation.action_mask,
-            time=jnp.repeat(timestep.observation.time, self.num_bots),
+            time=jnp.repeat(timestep.observation.step_count, self.num_bots),
         )
         if self._use_individual_rewards:
             # The environment returns a list of individual rewards and these are used as is.
