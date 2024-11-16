@@ -212,11 +212,11 @@ class SimpleOrchardGenerator:
             position=agent_positions
         )
 
-        time = jnp.array(0, jnp.int32)
+        step_count = jnp.array(0, jnp.int32)
 
         return SimpleOrchardState(
             key=key,
-            time=time,
+            step_count=step_count,
             bots=agents,
             trees=trees,
             apples=apples

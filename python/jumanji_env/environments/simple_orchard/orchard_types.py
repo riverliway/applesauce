@@ -66,7 +66,7 @@ class SimpleOrchardState:
     bots: SimpleOrchardEntity # List of bots (pytree structure)
     trees: SimpleOrchardEntity # List of trees (pytree structure)
     apples: SimpleOrchardApple # List of apples (pytree structure)
-    time: chex.Array # ()
+    step_count: chex.Array # ()
     key: chex.PRNGKey # (2,)
 
 # this replaces the Observation class.

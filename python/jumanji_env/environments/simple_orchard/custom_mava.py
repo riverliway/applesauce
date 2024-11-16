@@ -98,7 +98,7 @@ class SimpleOrchardWrapper(JumanjiMarlWrapper):
         modified_observation = Observation(
             agents_view=timestep.observation.agents_view.astype(float),
             action_mask=timestep.observation.action_mask,
-            time=jnp.repeat(timestep.observation.step_count, self.num_bots),
+            step_count=jnp.repeat(timestep.observation.step_count, self.num_bots),
         )
         if self._use_individual_rewards:
             # The environment returns a list of individual rewards and these are used as is.
