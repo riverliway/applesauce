@@ -390,7 +390,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # First condition is truncation, second is termination.
         terminate = jnp.all(state.apples.collected)
-        truncate = state.time >= self.time_limit
+        truncate = state.step_count >= self.time_limit
 
         timestep = jax.lax.switch(
             terminate + 2 * truncate,
