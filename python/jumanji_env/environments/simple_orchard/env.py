@@ -383,7 +383,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             bots=moved_agents,
             apples=new_apples,
             trees=state.trees,
-            time=state.time + 1,
+            step_count=state.step_count + 1,
             key=state.key,
         )
         observation = self._observer.state_to_observation(state)
