@@ -10,8 +10,8 @@ JaxArray: TypeAlias = dict
 
 # Actions
 NOOP = 0
-UP = 1
-DOWN = 2
+FORWARD = 1
+BACKWARD = 2
 LEFT = 3
 RIGHT = 4
 PICK = 5

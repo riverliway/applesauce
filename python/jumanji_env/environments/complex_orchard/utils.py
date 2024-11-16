@@ -70,6 +70,7 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
   :param state: The current state of the environment.
 
   :return: The possible moves for every bot. Shape: (num_bots, 2, 3) where they are [bot][forward, backward][x, y, is_possible]
+  Since the array is a float, the is_possible value is a boolean value represented as 1.0 for True and 0.0 for False.
   """
 
   num_bots = state.bots.position.shape[0]
