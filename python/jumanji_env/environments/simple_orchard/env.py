@@ -449,7 +449,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             """Returns the reward for all agents given a single apple."""
 
             # Zero out all agents if food was not eaten and add penalty
-            reward = (eaten_this_step - self.penalty) * jnp.ones(self.num_bots)
+            reward = (eaten_this_step - self.penalty) #* jnp.ones(self.num_bots)
 
             # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
             normalizer = self.num_apples
