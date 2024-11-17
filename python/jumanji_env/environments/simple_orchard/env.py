@@ -201,7 +201,10 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # Calculate the new position based on the chosen action
         new_position = agent.position + MOVES[action]
-
+        print("Existing position:", agent.position)
+        print("Actions:", MOVES[action])
+        print("New positions:", new_position)
+        
         # Check if the new position is out of bounds
         out_of_bounds = jnp.any((new_position < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
 
