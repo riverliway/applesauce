@@ -21,7 +21,7 @@ from jumanji_env.environments.simple_orchard.env import SimpleOrchard
 # This function replaces functionality of Mava's `mava.utils.make_env` functionality. 
 # right now this just contains the RecordEpisodeMetrics wrapper and does not contain an equivalent
 # to the LbfWrapper
-def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
+def make_env(env_name: str, config: DictConfig, add_global_state: bool = False) -> Tuple[MarlEnv, MarlEnv]:
     """
     Create Jumanji environments for training and evaluation.
 
@@ -54,8 +54,8 @@ def make_env(env_name: str, config: DictConfig) -> Tuple[MarlEnv, MarlEnv]:
     eval_env = RecordEpisodeMetrics(eval_env)
     
     # adding the orchard specific wrapper below
-    train_env = SimpleOrchardWrapper(train_env)
-    eval_env = SimpleOrchardWrapper(eval_env)
+    train_env = SimpleOrchardWrapper(train_env, add_global_state=add_global_state)
+    eval_env = SimpleOrchardWrapper(eval_env, add_global_state=add_global_state)
 
     return train_env, eval_env
 
