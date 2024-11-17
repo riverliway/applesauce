@@ -49,6 +49,37 @@ def apply_baseline_config(config: DictConfig, use_baseline: bool) -> DictConfig:
         return OmegaConf.merge(config, baseline_config)
     return config
 
+def compute_total_timesteps(config: DictConfig):
+    """Calculate total timesteps.
+    To calculate the total timesteps, the following formula is used:
+        total_timesteps = n_devices
+        * num_updates
+        * rollout_length
+        * update_batch_size
+        * num_envs
+
+            - `n_devices` represents the number of JAX devices available, which is essential for parallel computation.
+            - `num_updates` is the number of vectorised gradient updates to be be performed on each device.
+            - `rollout_length` is the number of timesteps in each rollout.
+            - `update_batch_size` is the batch size used for each update.
+            - `num_envs` is the number of parallel environments used for data collection.
+
+    This computation yields the total count of timesteps that will be carried out throughout the complete training procedure. Consequently, the number of timesteps within each training interval is established as `total_timesteps/num_evaluation`
+"""
+    n_devices = len(jax.devices())
+    config["system"]["num_updates_per_eval"] = (
+        config["system"]["num_updates"] // config["arch"]["num_evaluation"]
+    )
+    steps_per_rollout = (
+        n_devices
+        * config["system"]["num_updates_per_eval"]
+        * config["system"]["rollout_length"]
+        * config["system"]["update_batch_size"]
+        * config["arch"]["num_envs"]
+    )
+
+    return steps_per_rollout, config
+
 def get_learner_fn(
     env: jumanji.Environment,
     apply_fns: Tuple[ActorApply, CriticApply],
