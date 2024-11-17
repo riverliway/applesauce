@@ -25,7 +25,10 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
     key = jax.random.PRNGKey(config.system.seed)
     key, reset_key = jax.random.split(key)
     state, timestep = reset_fn(reset_key)
-
+    
+    if verbose:
+        print("Apple locations:", state.env_state.apples.position.tolist()
+    
     states = [state]
     episode_return = 0
     episode_length = 0
@@ -43,6 +46,7 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
         episode_length += 1
         if verbose:
             print("Step:", episode_length)
+            print("Bot Locations:", state.env_state.bots.position.tolist())
             print("Action:", action)
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
