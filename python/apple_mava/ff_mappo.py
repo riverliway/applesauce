@@ -1,3 +1,30 @@
+import jax  # For JAX utilities like random number generation, lax, and pmap
+import jax.numpy as jnp  # For JAX-based numerical operations
+import optax  # For defining optimizers and their updates
+import chex  # For type-checking and utility functions for arrays
+import flax  # For JAX-compatible neural network abstractions
+import flax.jax_utils  # For utility functions such as `replicate`
+from jumanji import Environment  # Assuming `jumanji.Environment` is part of the Jumanji library
+import tree  # For tree-like structures (often used with JAX data)
+from typing import Tuple, Any  # For type annotations
+from omegaconf import DictConfig  # For handling configuration
+
+# mava importations
+from mava.utils.jax_utils import (
+    merge_leading_dims,
+    unreplicate_batch_dim,
+    unreplicate_n_dims,
+)
+from mava.systems.ppo.types import LearnerState, OptStates, Params, PPOTransition
+from mava.utils.training import make_learning_rate
+from mava.types import (
+    ExperimentOutput,
+    LearnerFn,
+)
+
+# our custom implementations
+from apple_mava.ff_networks import Actor, Critic 
+
 def get_learner_fn(
     env: jumanji.Environment,
     apply_fns: Tuple[ActorApply, CriticApply],

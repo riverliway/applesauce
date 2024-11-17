@@ -11,7 +11,7 @@ from apple_mava.ff_networks import Actor
 from jumanji_env.environments.simple_orchard.custom_mava import make_env
 
 def render_one_episode(orchard_version_name, config, params, max_steps=100) -> None:
-    """Rollout episodes of a trained MAPPO policy."""
+    """Simulates and visualises one episode from rolling out a trained MAPPO model that will be passed to the function using actors_params."""
     # Create envs
     env_config = {**config.env.kwargs, **config.env.scenario.env_kwargs}
     env, eval_env = make_env(orchard_version_name, config)
@@ -80,6 +80,8 @@ def render_one_episode(orchard_version_name, config, params, max_steps=100) -> N
     return state_dicts
 
 def plot_performance(mean_episode_return, ep_returns, start_time):
+    """visualises the performance of the algorithm. This plot will be refreshed each time evaluation interval happens."""
+    
     plt.figure(figsize=(8, 4))
     clear_output(wait=True)
 
