@@ -9,6 +9,7 @@ from jax import tree
 from typing import Tuple, Any  # For type annotations
 from omegaconf import DictConfig  # For handling configuration
 from flax.core.frozen_dict import FrozenDict
+from optax._src.base import OptState
 
 # mava importations
 from mava.utils.jax_utils import (
