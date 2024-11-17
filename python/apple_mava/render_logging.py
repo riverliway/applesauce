@@ -10,7 +10,7 @@ from colorama import Fore, Style  # For colored terminal output
 from apple_mava.ff_networks import Actor
 from jumanji_env.environments.simple_orchard.custom_mava import make_env
 
-def render_one_episode(orchard_version_name, config, params, max_steps=100) -> None:
+def render_one_episode(orchard_version_name, config, params, max_steps, verbose=True) -> None:
     """Simulates and visualises one episode from rolling out a trained MAPPO model that will be passed to the function using actors_params."""
     # Create envs
     env_config = {**config.env.kwargs, **config.env.scenario.env_kwargs}
@@ -41,6 +41,12 @@ def render_one_episode(orchard_version_name, config, params, max_steps=100) -> N
         states.append(state)
         episode_return += jnp.mean(timestep.reward)
         episode_length += 1
+        if verbose:
+            print("Step:", episode_length)
+            print("Action:", action)
+            print("Reward:", jnp.mean(timestep.reward)
+            print("Accumulative Reward:", episode_return)
+            print("-"*70)
 
     # Print out the results of the episode
     print(f"{Fore.CYAN}{Style.BRIGHT}EPISODE RETURN: {episode_return}{Style.RESET_ALL}")
