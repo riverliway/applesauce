@@ -4,7 +4,7 @@ import optax  # For defining optimizers and their updates
 import chex  # For type-checking and utility functions for arrays
 import flax  # For JAX-compatible neural network abstractions
 import flax.jax_utils  # For utility functions such as `replicate`
-from jumanji import Environment  # Assuming `jumanji.Environment` is part of the Jumanji library
+import jumanji
 import tree  # For tree-like structures (often used with JAX data)
 from typing import Tuple, Any  # For type annotations
 from omegaconf import DictConfig  # For handling configuration
