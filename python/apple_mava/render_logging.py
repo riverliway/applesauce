@@ -44,7 +44,7 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
         if verbose:
             print("Step:", episode_length)
             print("Action:", action)
-            print("Reward:", jnp.mean(timestep.reward)
+            print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
             print("-"*70)
 
