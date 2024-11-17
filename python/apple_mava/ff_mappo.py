@@ -29,13 +29,33 @@ from mava.types import (
 # our custom implementations
 from apple_mava.ff_networks import Actor, Critic 
 
+def apply_baseline_config(config: DictConfig, use_baseline: bool) -> DictConfig:
+    """Applies minimal values to model parameters to allow for easy review of printed outputs."""
+    if use_baseline:
+        baseline_config = {
+                          "system": {
+                              "update_batch_size": 1,
+                              "rollout_length": 4,
+                              "num_updates": 1,
+                              "ppo_epochs": 1,
+                              "num_minibatches": 1,
+                          },
+                          "arch": {
+                              "num_envs": 1,
+                              "num_eval_episodes": 1,
+                          },
+                      }
+
+        return OmegaConf.merge(config, baseline_config)
+    return config
+
 def get_learner_fn(
     env: jumanji.Environment,
     apply_fns: Tuple[ActorApply, CriticApply],
     update_fns: Tuple[optax.TransformUpdateFn, optax.TransformUpdateFn],
     config: DictConfig,
 ) -> LearnerFn[LearnerState]:
-    """Get the learner function."""
+    """Returns a function which produces an ExperimentOutput, encapsulating the updated learner state, episode information, and loss metrics."""
     # Unpack apply and update functions.
     actor_apply_fn, critic_apply_fn = apply_fns
     actor_update_fn, critic_update_fn = update_fns
@@ -330,7 +350,7 @@ def get_learner_fn(
 def learner_setup(
     env: jumanji.Environment, keys: chex.Array, config: DictConfig
 ) -> Tuple[LearnerFn[LearnerState], Actor, LearnerState]:
-    """Initialise learner_fn, network, optimiser, environment and states."""
+    """Initialises components for training: the learner function, actor and critic networks and optimizers and environment states. It creates a function for learning, employs parallel processing over the cores for efficiency, and sets up initial states."""
     # Get available TPU cores.
     n_devices = len(jax.devices())
 
