@@ -27,7 +27,9 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
     state, timestep = reset_fn(reset_key)
     
     if verbose:
+        print("="*70)
         print("Apple locations:", state.env_state.apples.position.tolist()
+        print("="*70)
     
     states = [state]
     episode_return = 0
