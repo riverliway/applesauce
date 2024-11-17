@@ -7,7 +7,7 @@ import flax.jax_utils  # For utility functions such as `replicate`
 import jumanji
 from jax import tree
 from typing import Tuple, Any  # For type annotations
-from omegaconf import DictConfig  # For handling configuration
+from omegaconf import DictConfig, OmegaConf  # For handling configuration
 from flax.core.frozen_dict import FrozenDict
 from optax._src.base import OptState
 
