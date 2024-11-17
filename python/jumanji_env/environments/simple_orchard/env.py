@@ -316,7 +316,6 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             chex.Array: True if entities are adjacent, False otherwise.
         """
         distance = jnp.abs(entity_a.position - entity_b.position)
-        print("Entity distances:", distance)
         return jnp.sum(distance) == 1
 
 # Copied from `lbf.utils.py`
@@ -375,8 +374,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         new_apples, eaten_this_step = jax.vmap(
             self._eat_food, (None, 0)
         )(moved_agents, state.apples)
-        print("eaten_this_step:", eaten_this_step)
-        print("new_apples:", new_apples)
+
         reward = self.get_reward(new_apples, eaten_this_step)
 
         state = SimpleOrchardState(
