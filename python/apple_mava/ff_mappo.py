@@ -21,6 +21,8 @@ from mava.utils.training import make_learning_rate
 from mava.types import (
     ExperimentOutput,
     LearnerFn,
+    ActorApply,
+    CriticApply,
 )
 
 # our custom implementations
