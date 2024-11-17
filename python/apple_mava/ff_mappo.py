@@ -5,9 +5,10 @@ import chex  # For type-checking and utility functions for arrays
 import flax  # For JAX-compatible neural network abstractions
 import flax.jax_utils  # For utility functions such as `replicate`
 import jumanji
-import tree  # For tree-like structures (often used with JAX data)
+from jax import tree
 from typing import Tuple, Any  # For type annotations
 from omegaconf import DictConfig  # For handling configuration
+from flax.core.frozen_dict import FrozenDict
 
 # mava importations
 from mava.utils.jax_utils import (
