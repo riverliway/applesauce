@@ -15,6 +15,7 @@ from jumanji_env.environments.simple_orchard.orchard_types import (
     SimpleOrchardApple,
     SimpleOrchardObservation,
     SimpleOrchardState,
+    SimpleOrchardAgent,
 )
 # directly from jumanji 
 from jumanji import specs

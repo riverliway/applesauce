@@ -27,7 +27,7 @@ class SimpleOrchardEntity:
     position: chex.Array #(2,)
 
 @dataclass
-class Agent(SimpleOrchardEntity):
+class SimpleOrchardAgent(SimpleOrchardEntity):
     """
     An agent is an entity that can move and load food.
 
@@ -51,7 +51,6 @@ class SimpleOrchardApple(SimpleOrchardEntity):
 # agents were changed to bots and now directly calling the Entity class as opposed to an Agent subclass
 # trees also added to the class with same logic
 # apples replaces 'food_item'
-# time replaces 'step_count'
 @dataclass
 class SimpleOrchardState:
     """

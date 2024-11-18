@@ -2,7 +2,7 @@
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardState, SimpleOrchardEntity
+from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardState, SimpleOrchardEntity, SimpleOrchardAgent
 
 from typing import Tuple
 
@@ -207,7 +207,7 @@ class SimpleOrchardGenerator:
             collected=jnp.zeros((self._num_apples,), dtype=bool)
         )
 
-        agents = jax.vmap(SimpleOrchardEntity)(
+        agents = jax.vmap(SimpleOrchardAgent)(
             id=jnp.arange(self._num_bots),
             position=agent_positions
         )
