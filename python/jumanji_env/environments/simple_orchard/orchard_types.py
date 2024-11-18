@@ -27,7 +27,7 @@ class SimpleOrchardEntity:
     position: chex.Array #(2,)
 
 @dataclass
-class Agent(Entity):
+class Agent(SimpleOrchardEntity):
     """
     An agent is an entity that can move and load food.
 
