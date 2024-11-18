@@ -282,15 +282,20 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             # If the food has already been eaten or is not loaded, the sum will be equal to 0
             sum_agents = jnp.sum(all_food_collected)
             
-            # penalize agents for not collecting food
-            penalty = jnp.where(
-                (sum_agents != 0),
+            # penalize agents for not being near an apple
+            no_apple_penalty = jnp.where(
+                (all_food_collected == 0),
                 self.penalty,
                 0,
             )
             
+            # penalize agents for trying to pick up apples when there isn't one
+            invalid_load_penalty = jnp.where(
+                (actions == LOAD) & (collected_this_step == 0), 2 * self.penalty, 0
+            )
+
             # Zero out all agents if food was not collected and add penalty
-            reward = (all_food_collected * collected_this_step) - penalty
+            reward = (all_food_collected * collected_this_step) - no_apple_penalty - invalid_load_penalty
             
             # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
             normalizer = sum_agents * self.num_apples
