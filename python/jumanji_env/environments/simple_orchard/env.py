@@ -308,7 +308,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # Get reward per food for all food items,
         # then sum it on the agent dimension to get reward per agent.
-        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0))(
+        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0, 0))(
             apples, agents, all_food_collected, collected_this_step
         )
         return jnp.sum(reward_per_food, axis=0) 
