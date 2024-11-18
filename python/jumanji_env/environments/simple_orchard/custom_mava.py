@@ -9,7 +9,8 @@ import jumanji
 from jumanji.types import TimeStep
 from mava.types import MarlEnv, Observation, State
 from mava.wrappers import (
-    RecordEpisodeMetrics
+    RecordEpisodeMetrics,
+    AutoResetWrapper,
 )
 # pulling in the Jumanji mult-agent wrapper
 from mava.wrappers.jumanji import JumanjiMarlWrapper
@@ -48,7 +49,10 @@ def make_env(env_name: str, config: DictConfig, add_global_state: bool = False) 
     # making the environments
     train_env = jumanji.make(env_name, generator=generator)
     eval_env = jumanji.make(env_name, generator=generator)
-
+    
+    # adding auto reset wrapper to train environment
+    train_env = AutoResetWrapper(train_env)
+    
     # adding the wrappers that log evaluation metrics.
     train_env = RecordEpisodeMetrics(train_env)
     eval_env = RecordEpisodeMetrics(eval_env)
