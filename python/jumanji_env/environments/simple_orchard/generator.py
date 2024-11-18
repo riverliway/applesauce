@@ -209,7 +209,8 @@ class SimpleOrchardGenerator:
 
         agents = jax.vmap(SimpleOrchardAgent)(
             id=jnp.arange(self._num_bots),
-            position=agent_positions
+            position=agent_positions,
+            loading=jnp.zeros((self._num_bots,), dtype=bool),
         )
 
         step_count = jnp.array(0, jnp.int32)
