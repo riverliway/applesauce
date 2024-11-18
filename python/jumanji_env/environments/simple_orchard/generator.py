@@ -185,13 +185,13 @@ class SimpleOrchardGenerator:
         # 1's where new things can be placed.
         mask = jnp.ones((self._width, self._height), dtype=bool)
         mask = mask.at[tree_positions].set(False)
+        mask = mask.ravel()
 
         # Make the mask flat to pass into the choice function, then generate the apple locations
-        apple_positions = self.sample_apples(key=apple_pos_key, mask=mask.ravel())
-
+        apple_positions = self.sample_apples(key=apple_pos_key, mask=mask)
         mask = mask.at[apple_positions].set(False)
-
-        agent_positions = self.sample_agents(key=agent_pos_key, mask=mask.ravel())
+        mask = mask.ravel()
+        agent_positions = self.sample_agents(key=agent_pos_key, mask=mask)
 
         # Create a pytree of generic entitys for the trees
         # The ID is just its position in the generated array

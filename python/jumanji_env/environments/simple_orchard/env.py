@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from jumanji_env.environments.simple_orchard.constants import MOVES
+from jumanji_env.environments.simple_orchard.constants import MOVES, LOAD
 from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
 from jumanji_env.environments.simple_orchard.observer import SimpleOrchardObserver
 from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardAgent, SimpleOrchardEntity
@@ -119,7 +119,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         generator: Optional[SimpleOrchardGenerator] = None,
         time_limit: int = 200,
         normalize_reward: bool = True,
-        penalty: float = 0.0,
+        penalty: float = -0.01,
     ) -> None:
         super().__init__()
 
@@ -458,6 +458,10 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # Fix collisions
         moved_agents = self._fix_collisions(moved_agents, agents)
+        
+        moved_agents = jax.vmap(lambda agent, action: agent.replace(loading=(action == LOAD)))(
+            moved_agents, actions
+        )
 
         return moved_agents
     
