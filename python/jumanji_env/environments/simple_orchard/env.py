@@ -203,7 +203,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             self._collect_food, (None, 0)
         )(moved_agents, state.apples)
 
-        reward = self.get_reward(apple_items, moved_agents, all_food_collected, collected_this_step)
+        reward = self.get_reward(apple_items, all_food_collected, collected_this_step)
 
         state = SimpleOrchardState(
             bots=moved_agents,
