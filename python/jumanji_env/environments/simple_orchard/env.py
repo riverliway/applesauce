@@ -298,7 +298,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             reward = (all_food_collected * collected_this_step) - no_apple_penalty # - invalid_load_penalty
             
             # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
-            normalizer = sum_agents * self.num_apples
+            normalizer = jnp.maximum(sum_agents * self.num_apples, 1e-8)
             reward = jnp.where(
                 self.normalize_reward, jnp.nan_to_num(reward / normalizer), reward
             )
