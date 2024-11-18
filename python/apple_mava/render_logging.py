@@ -45,7 +45,8 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
             action = pi.sample(seed=action_key)
         if verbose:
             print("Step:", episode_length)
-            print("Bot Location Before Step:", state.env_state.bots.position.tolist())   
+            print("Bot Location Before Step:", state.env_state.bots.position.tolist())
+            print("Action Distribution:", pi)
         state, timestep = step_fn(state, action)
         states.append(state)
         episode_return += jnp.mean(timestep.reward)

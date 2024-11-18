@@ -26,22 +26,17 @@ class SimpleOrchardEntity:
     id: chex.Array # ()
     position: chex.Array #(2,)
 
+@dataclass
+class Agent(Entity):
+    """
+    An agent is an entity that can move and load food.
 
-### We decided to exclude the creation of the Agent class as a specific type. ###
-### Leaving original code here for future reference. ###
-
-# @dataclass
-# class Agent(Entity):
-#     """
-#     An agent is an entity that can move and load food.
-
-#     id: unique number representing only this food.
-#     position: the position of this food.
-#     level: the level of this food.
-#     loading: whether the agent is currently loading food.
-#     """
-
-#     loading: chex.Array  # () - bool: is loading food
+    id: unique number representing only this food.
+    position: the position of this food.
+    level: the level of this food.
+    loading: whether the agent is currently loading food.
+    """
+    loading: chex.Array  # () - bool: is loading food
 
 # This is replacing Food class.
 @dataclass

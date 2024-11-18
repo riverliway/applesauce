@@ -118,8 +118,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         self,
         generator: Optional[SimpleOrchardGenerator] = None,
         time_limit: int = 100,
-        normalize_reward: bool = True,
-        penalty: float = 0.0,
+        normalize_reward: bool = False,
+        penalty: float = -0.5,
     ) -> None:
         super().__init__()
 
@@ -201,9 +201,6 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # Calculate the new position based on the chosen action
         new_position = agent.position + MOVES[action]
-        print("Existing position:", agent.position)
-        print("Actions:", MOVES[action])
-        print("New positions:", new_position)
         
         # Check if the new position is out of bounds
         out_of_bounds = jnp.any((new_position < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
