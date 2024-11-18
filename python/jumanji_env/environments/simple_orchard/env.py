@@ -119,7 +119,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         generator: Optional[SimpleOrchardGenerator] = None,
         time_limit: int = 200,
         normalize_reward: bool = True,
-        penalty: float = -0.01,
+        penalty: float = 0.01,
     ) -> None:
         super().__init__()
 
