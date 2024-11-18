@@ -284,7 +284,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             
             # penalize agents for not collecting food
             penalty = jnp.where(
-                (sum_agents != 0)
+                (sum_agents != 0),
                 self.penalty,
                 0,
             )
