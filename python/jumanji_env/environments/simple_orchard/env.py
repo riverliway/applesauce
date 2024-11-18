@@ -291,7 +291,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             
             # penalize agents for trying to pick up apples when there isn't one
             invalid_load_penalty = jnp.where(
-                (actions == LOAD) & (collected_this_step == 0), 2 * self.penalty, 0
+                agent.loading & (collected_this_step == 0), 2 * self.penalty, 0
             )
 
             # Zero out all agents if food was not collected and add penalty
