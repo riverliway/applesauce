@@ -203,7 +203,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             self._collect_food, (None, 0)
         )(moved_agents, state.apples)
 
-        reward = self.get_reward(apple_items, all_food_collected, collected_this_step)
+        reward = self.get_reward(apple_items, moved_agents, all_food_collected, collected_this_step)
 
         state = SimpleOrchardState(
             bots=moved_agents,
@@ -261,6 +261,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
     def get_reward(
         self,
         apples: SimpleOrchardApple,
+        agents: SimpleOrchardAgent,
         all_food_collected: chex.Array,
         collected_this_step: chex.Array,
     ) -> chex.Array:
@@ -274,6 +275,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         def get_reward_per_food(
             apple: SimpleOrchardApple,
+            agent: SimpleOrchardAgent,
             all_food_collected: chex.Array,
             collected_this_step: chex.Array,
         ) -> chex.Array:
@@ -307,7 +309,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         # Get reward per food for all food items,
         # then sum it on the agent dimension to get reward per agent.
         reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0))(
-            apples, all_food_collected, collected_this_step
+            apples, agents, all_food_collected, collected_this_step
         )
         return jnp.sum(reward_per_food, axis=0) 
  
