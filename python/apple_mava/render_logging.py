@@ -27,6 +27,7 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
     state, timestep = reset_fn(reset_key)
     
     if verbose:
+        action_types = ("NOOP", "UP", "DOWN", "LEFT", "RIGHT", "LOAD")
         print("="*70)
         print("Apple locations:", state.env_state.apples.position.tolist())
         print("="*70)
@@ -42,14 +43,16 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
             action = pi.mode()
         else:
             action = pi.sample(seed=action_key)
+        if verbose:
+            print("Step:", episode_length)
+            print("Bot Location Before Step:", state.env_state.bots.position.tolist())   
         state, timestep = step_fn(state, action)
         states.append(state)
         episode_return += jnp.mean(timestep.reward)
         episode_length += 1
         if verbose:
-            print("Step:", episode_length)
-            print("Bot Locations:", state.env_state.bots.position.tolist())
             print("Action:", action)
+            print("Bot Location After:", state.env_state.bots.position.tolist())
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
             print("-"*70)
