@@ -261,7 +261,6 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
     def get_reward(
         self,
         apples: SimpleOrchardApple,
-        agents: SimpleOrchardAgent,
         all_food_collected: chex.Array,
         collected_this_step: chex.Array,
     ) -> chex.Array:
@@ -275,7 +274,6 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         def get_reward_per_food(
             apple: SimpleOrchardApple,
-            agent: SimpleOrchardAgent,
             all_food_collected: chex.Array,
             collected_this_step: chex.Array,
         ) -> chex.Array:
@@ -291,13 +289,13 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
                 0,
             )
             
-            # penalize agents for trying to pick up apples when there isn't one
-            invalid_load_penalty = jnp.where(
-                agent.loading & (collected_this_step == 0), 2 * self.penalty, 0
-            )
+            # # penalize agents for trying to pick up apples when there isn't one
+            # invalid_load_penalty = jnp.where(
+            #     agent.loading & (collected_this_step == 0), 2 * self.penalty, 0
+            # )
 
             # Zero out all agents if food was not collected and add penalty
-            reward = (all_food_collected * collected_this_step) - no_apple_penalty - invalid_load_penalty
+            reward = (all_food_collected * collected_this_step) - no_apple_penalty # - invalid_load_penalty
             
             # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
             normalizer = sum_agents * self.num_apples
@@ -308,8 +306,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         # Get reward per food for all food items,
         # then sum it on the agent dimension to get reward per agent.
-        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0, 0))(
-            apples, agents, all_food_collected, collected_this_step
+        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0))(
+            apples, all_food_collected, collected_this_step
         )
         return jnp.sum(reward_per_food, axis=0) 
  
