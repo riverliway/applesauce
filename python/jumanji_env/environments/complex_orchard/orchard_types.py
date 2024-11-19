@@ -9,6 +9,7 @@ if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
 else:
     from chex import dataclass
 
+from jumanji_env.environments.complex_orchard.constants import NUM_ACTIONS, JaxArray
 
 # This replaces the Entity class.
 # The level of the Entity was removed.
@@ -24,9 +25,9 @@ class ComplexOrchardEntity:
     position: the position of this entity (x, y) in centimeters
     diameter: the diameter of this entity in centimeters
     """
-    id: chex.Array # ()
-    position: chex.Array #(2,)
-    diameter: chex.Array # ()
+    id: JaxArray # ()
+    position: JaxArray[2]
+    diameter: JaxArray # ()
 
 @dataclass
 class ComplexOrchardBot(ComplexOrchardEntity):
@@ -41,9 +42,9 @@ class ComplexOrchardBot(ComplexOrchardEntity):
     orientation: float: the angle in radians that the agent is facing
     """
 
-    holding: chex.Array  # ()
-    job: chex.Array  # () - int: 0 if the agent is an apple collector, 1 if the agent is a basket transporter
-    orientation: chex.Array  # () - float: the angle in radians that the agent is facing
+    holding: JaxArray  # ()
+    job: JaxArray  # () - int: 0 if the agent is an apple collector, 1 if the agent is a basket transporter
+    orientation: JaxArray  # () - float: the angle in radians that the agent is facing
 
 # This is replacing Food class.
 @dataclass
@@ -51,22 +52,22 @@ class ComplexOrchardApple(ComplexOrchardEntity):
     """
     The desired collectable.
     """
-    held: chex.Array # () - bool: if the apple has been picked up by a bot
-    collected: chex.Array # () - bool: if the apple has been dropped in a basket
+    held: JaxArray # () - bool: if the apple has been picked up by a bot
+    collected: JaxArray # () - bool: if the apple has been dropped in a basket
 
 @dataclass
 class ComplexOrchardTree(ComplexOrchardEntity):
     """
     Obstacle in the environment.
     """
-    fertility: chex.Array # () - float: the fertility of the tree
+    fertility: JaxArray # () - float: the fertility of the tree
 
 @dataclass
 class ComplexOrchardBasket(ComplexOrchardEntity):
     """
     Where to deposit the apples.
     """
-    held: chex.Array # () - bool: if the basket has been picked up by a bot
+    held: JaxArray # () - bool: if the basket has been picked up by a bot
 
 
 # This is replacing State class
@@ -84,16 +85,15 @@ class ComplexOrchardState:
     trees: ComplexOrchardTree # List of trees (pytree structure)
     apples: ComplexOrchardApple # List of apples (pytree structure)
     baskets: ComplexOrchardBasket # List of baskets (pytree structure)
-    time: chex.Array # ()
-    key: chex.PRNGKey # (2,)
+    time: JaxArray # ()
+    width: JaxArray # ()
+    height: JaxArray # ()
+    key: chex.PRNGKey
 
-# this replaces the Observation class.
-# agents_view now only holds two channels (x,y) but now applied to trees as well.
-class SimpleOrchardObservation(NamedTuple):
+class ComplexOrchardObservation(NamedTuple):
     """
     The observation "seen" by the bots given to the neural network as the input layer.
     """
-    # in the format (num_agents, [apple[i].position[0], apple[i].position[1], ..., bot[i].position[0], bot[i].position[1], ...])
-    agents_view: chex.Array # (num_agents, 2 * (num_apples + num_trees + num_bots))
-    action_mask: chex.Array # (num_agents, 7) since there are 7 actions in the simple env [IDLE, UP, DOWN, LEFT, RIGHT, PICK, DROP]
-    time: chex.Array # ()
+    agents_view: JaxArray['num_bots', 'num_observations'] # the view of the agents, it is dependent on which observer is used
+    action_mask: JaxArray['num_bots', 'NUM_ACTIONS'] # NUM_ACTIONS will be 7 since there are 7 actions [IDLE, UP, DOWN, LEFT, RIGHT, PICK, DROP]
+    time: JaxArray # ()

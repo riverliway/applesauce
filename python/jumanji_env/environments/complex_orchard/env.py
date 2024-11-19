@@ -1,170 +1,91 @@
 ### The following has been adapted from `jumanji/jumanji/environments/routing/lbf/env.py` ####
 ### This also includes functions that were brought over from `jumanji/jumanji/environments/routing/lbf/utils.py`
 
-from functools import cached_property
-from typing import Dict, Optional, Sequence, Tuple, Union, Any
+from typing import Dict, Optional, Tuple, Any
 
 import chex
 import jax
 import jax.numpy as jnp
-import matplotlib
-from numpy.typing import NDArray
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from jumanji_env.environments.simple_orchard.constants import MOVES
-from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
-from jumanji_env.environments.simple_orchard.observer import SimpleOrchardObserver
-from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardEntity
+from jumanji_env.environments.complex_orchard.constants import (
+  NUM_ACTIONS,
+  JaxArray,
+  ROBOT_TURN_SPEED,
+  ROBOT_INTERACTION_DISTANCE,
+  FORWARD,
+  BACKWARD,
+  LEFT,
+  RIGHT,
+  PICK,
+  DROP,
+  APPLE_DIAMETER,
+  REWARD_OUT_OF_BOUNDS,
+  REWARD_BAD_PICK,
+  REWARD_BAD_DROP,
+  REWARD_COLLECT_APPLE
+)
+from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
+from jumanji_env.environments.complex_orchard.observer import BasicObserver
+from jumanji_env.environments.complex_orchard.utils import bots_possible_moves, are_intersecting, distances_between_entities, are_any_intersecting
+from jumanji_env.environments.complex_orchard.orchard_types import ComplexOrchardApple, ComplexOrchardObservation, ComplexOrchardState, ComplexOrchardEntity, ComplexOrchardBot
 
 # directly from jumanji
-import jumanji.environments.routing.lbf.utils as utils
 from jumanji import specs
 from jumanji.env import Environment
-from jumanji.environments.routing.lbf.viewer import LevelBasedForagingViewer
 from jumanji.types import TimeStep, restart, termination, transition, truncation
-from jumanji.viewer import Viewer
 
 # we are still calling Observation in functions so importing. Assuming this needs to be addressed.
 from mava.types import Observation
 
-
-
 # replaces `LevelBasedForaging` Class
-# why removal of specs.MultiDiscreteArray, Observation from class arguments?
-class SimpleOrchard(Environment[SimpleOrchardState]):
-    """
-    An implementation of the Level-Based Foraging environment where agents need to
-    cooperate to collect food and split the reward.
-
-    Original implementation: https://github.com/semitable/lb-foraging/tree/master
-
-    - `observation`: `Observation`
-        - `agent_views`: Depending on the `observer` passed to `__init__`, it can be a
-          `GridObserver` or a `VectorObserver`.
-            - `GridObserver`: Returns an agent's view with a shape of
-              (num_agents, 3, 2 * fov + 1, 2 * fov +1).
-            - `VectorObserver`: Returns an agent's view with a shape of
-              (num_agents, 3 * (num_food + num_agents).
-        - `action_mask`: JAX array (bool) of shape (num_agents, 6)
-          indicating for each agent which size actions
-          (no-op, up, down, left, right, load) are allowed.
-        - `step_count`: int32, the number of steps since the beginning of the episode.
-
-    - `action`: JAX array (int32) of shape (num_agents,). The valid actions for each
-        agent are (0: noop, 1: up, 2: down, 3: left, 4: right, 5: load).
-
-    - `reward`: JAX array (float) of shape (num_agents,)
-        When one or more agents load food, the food level is rewarded to the agents, weighted
-        by the level of each agent. The reward is then normalized so that, at the end,
-        the sum of the rewards (if all food items have been picked up) is one.
-
-    - Episode Termination:
-        - All food items have been eaten.
-        - The number of steps is greater than the limit.
-
-    - `state`: `State`
-        - `agents`: Stacked Pytree of `Agent` objects of length `num_agents`.
-            - `Agent`:
-                - `id`: JAX array (int32) of shape ().
-                - `position`: JAX array (int32) of shape (2,).
-                - `level`: JAX array (int32) of shape ().
-                - `loading`: JAX array (bool) of shape ().
-        - `food_items`: Stacked Pytree of `Food` objects of length `num_food`.
-            - `Food`:
-                - `id`: JAX array (int32) of shape ().
-                - `position`: JAX array (int32) of shape (2,).
-                - `level`: JAX array (int32) of shape ().
-                - `eaten`: JAX array (bool) of shape ().
-        - `step_count`: JAX array (int32) of shape (), the number of steps since the beginning
-          of the episode.
-        - `key`: JAX array (uint) of shape (2,)
-            JAX random generation key. Ignored since the environment is deterministic.
-
-    Example:
-    ```python
-    from jumanji.environments import LevelBasedForaging
-    env = LevelBasedForaging()
-    key = jax.random.key(0)
-    state, timestep = jax.jit(env.reset)(key)
-    env.render(state)
-    action = env.action_spec().generate_value()
-    state, timestep = jax.jit(env.step)(state, action)
-    env.render(state)
-    ```
-
-    Initialization Args:
-    - `generator`: A `Generator` object that generates the initial state of the environment.
-        Defaults to a `RandomGenerator` with the following parameters:
-            - `grid_size`: 8
-            - `fov`: 8 (full observation of the grid)
-            - `num_agents`: 2
-            - `num_food`: 2
-            - `max_agent_level`: 2
-            - `force_coop`: True
-    - `time_limit`: The maximum number of steps in an episode. Defaults to 200.
-    - `grid_observation`: If `True`, the observer generates a grid observation (default is `False`).
-    - `normalize_reward`: If `True`, normalizes the reward (default is `True`).
-    - `penalty`: The penalty value (default is 0.0).
-    - `viewer`: Viewer to render the environment. Defaults to `LevelBasedForagingViewer`.
-    """
-
-    # why removal of grid observation
-    # noticed fov is hard set which explains why it is not in generator
-    # removal of viewer
-    # added super.init -- SASHA REPO
-
+class ComplexOrchard(Environment[ComplexOrchardState]):
     def __init__(
         self,
-        generator: Optional[SimpleOrchardGenerator] = None,
+        generator: Optional[ComplexOrchardGenerator] = None,
         time_limit: int = 100,
         normalize_reward: bool = True,
         penalty: float = 0.0,
     ) -> None:
         super().__init__()
 
-        self._generator = generator or SimpleOrchardGenerator(
-            width=10,
-            height=11
+        self._generator = generator or ComplexOrchardGenerator(
+            width=2000,
+            height=1600
         )
         self.time_limit = time_limit
-        self.width: int = self._generator.get_width()
-        self.height: int = self._generator.get_height()
-        self.num_bots: int = self._generator.get_num_bots()
-        self.num_apples: int = self._generator.get_num_apples()
-        self.num_trees: int = self._generator.get_num_trees()
+        self.width: int = self._generator.width
+        self.height: int = self._generator.height
+        self.num_picker_bots = self._generator.num_picker_bots
+        self.num_pusher_bots = self._generator.num_pusher_bots
+        self.num_baskets = self._generator.num_baskets
         self.fov = 5
         # adding the following two because mava and jumanji wrappers expect these
-        self.action_dim: int = 6
-        self.num_agents: int = self._generator.get_num_bots()
-
+        self.action_dim: int = NUM_ACTIONS
+        self.num_agents: int = self.num_picker_bots + self.num_pusher_bots
 
         self.normalize_reward = normalize_reward
         self.penalty = penalty
-        self.num_obs_features = jnp.array(2 * (self.num_bots + self.num_apples + self.num_trees), jnp.int32)
 
-        self._observer = SimpleOrchardObserver(
+        self._observer = BasicObserver(
             fov=self.fov,
             width=self.width,
-            height=self.height,
-            num_bots=self.num_bots,
-            num_apples=self.num_apples,
-            num_trees=self.num_trees
+            height=self.height
         )
 
     def __repr__(self) -> str:
         return (
-            "LevelBasedForaging(\n"
+            "ComplexOrchard(\n"
             + f"\t grid_width={self.width},\n"
             + f"\t grid_height={self.height},\n"
-            + f"\t num_agents={self.num_bots}, \n"
-            + f"\t num_food={self.num_apples}, \n"
-            + f"\t num_trees={self.num_trees}\n"
+            + f"\t num_picker_bots={self.num_picker_bots}, \n"
+            + f"\t num_pusher_bots={self.num_pusher_bots}, \n"
+            + f"\t num_baskets={self.num_baskets}, \n"
             ")"
         )
 
-    # same other than naming convention
-    def reset(self, key: chex.PRNGKey) -> Tuple[SimpleOrchardState, TimeStep]:
+    def reset(self, key: chex.PRNGKey) -> Tuple[ComplexOrchardState, TimeStep]:
         """Resets the environment.
 
         Args:
@@ -181,183 +102,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
         return state, timestep
 
-# Copied from `lbf.utils.py`
-# adapted for width and height, naming conventions
-    def _simulate_agent_movement(
-        self, agent: SimpleOrchardEntity, action: chex.Array, apples: SimpleOrchardApple, agents: SimpleOrchardEntity
-    ) -> SimpleOrchardEntity:
-        """
-        Move the agent based on the specified action.
-
-        Args:
-            agent (SimpleOrchardEntity): The agent to move.
-            action (chex.Array): The action to take.
-            apples (SimpleOrchardApple): All apples in the grid.
-            agents (SimpleOrchardEntity): All agents in the grid.
-
-        Returns:
-            Agent: The agent with its updated position.
-        """
-
-        # Calculate the new position based on the chosen action
-        new_position = agent.position + MOVES[action]
-
-        # Check if the new position is out of bounds
-        out_of_bounds = jnp.any((new_position < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
-
-        # Check if the new position is occupied by food or another agent
-        agent_at_position = jnp.any(
-            jnp.all(new_position == agents.position, axis=1) & (agent.id != agents.id)
-        )
-        apple_at_position = jnp.any(
-            jnp.all(new_position == apples.position, axis=1) & ~apples.collected
-        )
-        entity_at_position = jnp.any(agent_at_position | apple_at_position)
-
-        # Move the agent to the new position if it's a valid position,
-        # otherwise keep the current position
-        new_agent_position = jnp.where(
-            out_of_bounds | entity_at_position, agent.position, new_position
-        )
-
-        # Return the agent with the updated position
-        return SimpleOrchardEntity(
-            id=agent.id,
-            position=new_agent_position
-        )
-
-# Copied from `lbf.utils.py`
-    def _flag_duplicates(self, a: chex.Array) -> chex.Array:
-        """Return a boolean array indicating which elements of `a` are duplicates.
-
-        Example:
-            a = jnp.array([1, 2, 3, 2, 1, 5])
-            flag_duplicates(a)  # jnp.array([True, False, True, False, True, True])
-        """
-        # https://stackoverflow.com/a/11528078/5768407
-        _, indices, counts = jnp.unique(
-            a, return_inverse=True, return_counts=True, size=len(a), axis=0
-        )
-        return ~(counts[indices] == 1)
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def _fix_collisions(self, moved_agents: SimpleOrchardEntity, original_agents: SimpleOrchardEntity) -> SimpleOrchardEntity:
-        """
-        Fix collisions in the moved agents by resolving conflicts with the original agents.
-        If a number 'N' of agents end up in the same position after the move, the initial
-        position of the agents is retained.
-
-        Args:
-            moved_agents (Agent): Agents with potentially updated positions.
-            original_agents (Agent): Original agents with their initial positions.
-
-        Returns:
-            Agent: Agents with collisions resolved.
-        """
-        # Detect duplicate positions
-        duplicates = self._flag_duplicates(moved_agents.position)
-        duplicates = duplicates.reshape((duplicates.shape[0], -1))
-
-        # If there are duplicates, use the original agent position.
-        new_positions = jnp.where(
-            duplicates,
-            original_agents.position,
-            moved_agents.position,
-        )
-
-        # Recreate agents with new positions
-        agents: SimpleOrchardEntity = jax.vmap(SimpleOrchardEntity)(
-            id=original_agents.id,
-            position=new_positions
-        )
-        return agents
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def _update_agent_positions(
-        self, agents: SimpleOrchardEntity, actions: chex.Array, apples: SimpleOrchardApple
-    ) -> Any:
-        """
-        Update agent positions based on actions and resolve collisions.
-
-        Args:
-            agents (SimpleOrchardEntity): The current state of agents.
-            actions (chex.Array): Actions taken by agents.
-            apples (SimpleOrchardApple): All apples in the grid.
-
-        Returns:
-            Agent: Agents with updated positions.
-        """
-        # Move the agent to a valid position
-        moved_agents = jax.vmap(self._simulate_agent_movement, (0, 0, None, None))(
-            agents,
-            actions,
-            apples,
-            agents
-        )
-
-        # Fix collisions
-        moved_agents = self._fix_collisions(moved_agents, agents)
-
-        return moved_agents
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def are_entities_adjacent(self, entity_a: SimpleOrchardEntity, entity_b: SimpleOrchardEntity) -> chex.Array:
-        """
-        Check if two entities are adjacent in the grid.
-
-        Args:
-            entity_a (SimpleOrchardEntity): The first entity.
-            entity_b (SimpleOrchardEntity): The second entity.
-
-        Returns:
-            chex.Array: True if entities are adjacent, False otherwise.
-        """
-        distance = jnp.abs(entity_a.position - entity_b.position)
-        print("Entity distances:", distance)
-        return jnp.sum(distance) == 1
-
-# Copied from `lbf.utils.py`
-# UTIL COPY BUT WITH HEAVY MODIFICATIONS, 
-# LIKELY SOURCE FOR TRAINING ISSUES. . . 
-    def _eat_food(self, agents: SimpleOrchardEntity, apple: SimpleOrchardApple) -> Tuple[SimpleOrchardApple, chex.Array]:
-        """Try to eat the provided food if possible.
-
-        Args:
-            agents(Agent): All agents in the grid.
-            apple(SimpleOrchardApple): The food to attempt to eat.
-
-        Returns:
-            new_food (Food): Updated state of the food, indicating whether it was eaten.
-            is_food_eaten_this_step (chex.Array): Whether or not the food was eaten at this step.
-        """
-
-        def is_eaten(agent: SimpleOrchardEntity, apple: SimpleOrchardApple) -> chex.Array:
-            """Return 1 if the agent is adjacent to the food, else 0."""
-            return jax.lax.select(
-                self.are_entities_adjacent(agent, apple) & ~apple.collected,
-                1,
-                0,
-            )
-
-        # Get the level of all adjacent agents that are trying to load the food
-        ###### BASED ON HOW we have this set up we are not including whether the agents
-        ###### trying to load food. 
-        adj_loading_agents_levels = jax.vmap(is_eaten, (0, None))(agents, apple)
-
-        # If the food has already been eaten or is not loaded, the sum will be equal to 0
-        is_food_eaten_this_step = jnp.sum(adj_loading_agents_levels) > 0
-
-        # Set food to eaten if it was eaten.
-        new_food = apple.replace(collected=is_food_eaten_this_step | apple.collected)  # type: ignore
-
-        return new_food, is_food_eaten_this_step
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def step(self, state: SimpleOrchardState, actions: chex.Array) -> Tuple[SimpleOrchardState, TimeStep]:
+    def step(self, state: ComplexOrchardState, actions: JaxArray['num_bots']) -> Tuple[ComplexOrchardState, TimeStep]:
         """Simulate one step of the environment.
 
         Args:
@@ -368,29 +113,48 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             Tuple[State, TimeStep]: `State` object corresponding to the next state and
             `TimeStep` object corresponding the timestep returned by the environment.
         """
-        # Move agents, fix collisions that may happen and set loading status.
-        moved_agents = self._update_agent_positions(state.bots, actions, state.apples)
+        # Perform the actions for the bots
+        new_bot_positions, did_collide = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
+        new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
+        new_holding, new_held, did_try_bad_pick = self._perform_pick(state, actions == PICK)
+        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple = self._perform_drop(state, new_holding, new_held, actions == DROP)
+        
+        # Calculate the reward for each bot
+        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_collect_apple)
 
-        # Eat the food
-        new_apples, eaten_this_step = jax.vmap(
-            self._eat_food, (None, 0)
-        )(moved_agents, state.apples)
-        print("eaten_this_step:", eaten_this_step)
-        print("new_apples:", new_apples)
-        reward = self.get_reward(new_apples, eaten_this_step)
-
-        state = SimpleOrchardState(
-            bots=moved_agents,
-            apples=new_apples,
-            trees=state.trees,
-            time=state.time + 1,
-            key=state.key,
+        # Update the state
+        new_bots = jax.vmap(ComplexOrchardBot)(
+            id=state.bots.id,
+            position=new_bot_positions,
+            diameter=state.bots.diameter,
+            holding=new_holding,
+            job=state.bots.job,
+            orientation=new_bot_orientations
         )
-        observation = self._observer.state_to_observation(state)
 
-        # First condition is truncation, second is termination.
+        new_apples = jax.vmap(ComplexOrchardApple)(
+            id=state.apples.id,
+            position=new_apple_position,
+            diameter=state.apples.diameter,
+            held=new_held,
+            collected=new_collected
+        )
+
+        new_state = ComplexOrchardState(
+            key=state.key,
+            time=state.time + 1,
+            width=state.width,
+            height=state.height,
+            bots=new_bots,
+            trees=state.trees,
+            apples=new_apples,
+            baskets=state.baskets
+        )
+
+        # Determine if the episode is over
         terminate = jnp.all(state.apples.collected)
         truncate = state.time >= self.time_limit
+        observation = self._observer.state_to_observation(state)
 
         timestep = jax.lax.switch(
             terminate + 2 * truncate,
@@ -416,57 +180,251 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             observation,
         )
 
-        timestep.extras = self._get_extra_info(state, timestep)
+        timestep.extras = self._get_extra_info(new_state, timestep)
 
-        return state, timestep
+        return new_state, timestep
+    
+    def _perform_movement(
+        self,
+        state: ComplexOrchardState,
+        move_forwards_mask: JaxArray['num_bots'],
+        move_backwards_mask: JaxArray['num_bots'],
+    ) -> Tuple[JaxArray['num_bots', 2], JaxArray['num_bots']]:
+        """
+        Perform the movement for the bots.
 
-    def _get_extra_info(self, state: SimpleOrchardState, timestep: TimeStep) -> Dict:
+        :param state: The current state of the environment
+        :param move_forwards_mask: A boolean for each bot indicating if they are moving forward
+        :param move_backwards_mask: A boolean for each bot indicating if they are moving backward
+
+        :return: The new positions of all of the bots. Shape: (num_bots, 2)
+        and a boolean array indicating if the bot tried to collide with something. Shape: (num_bots,)
+        """
+
+        possible_moves: JaxArray['num_bots', 2, 3] = bots_possible_moves(state)
+
+        # If the bot is even capable of moving to that location
+        can_forwards = possible_moves[:, 0, 2] > 0.5
+        can_backwards = possible_moves[:, 1, 2] > 0.5
+
+        # Update the positions of the bots
+        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[move_forwards_mask & can_forwards].set(possible_moves[:, 0, 0:1])
+        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[move_backwards_mask & can_backwards].set(possible_moves[:, 1, 0:1])
+
+        # Check if any bots are colliding with each other because of the move
+        
+        # Create new entities with the new positions to check if they are intersecting with the other entities
+        # These entities are not added to the state because they're just used for calculations
+        new_bots = jax.vmap(ComplexOrchardEntity)(
+            id=state.bots.id,
+            position=new_positions,
+            diameter=state.bots.diameter,
+        )
+
+        # Check if each bot is intersecting with any other bot (including itself)
+        is_intersecting_other_bots: JaxArray['num_bots', 'num_bots'] = are_intersecting(new_bots, new_bots)
+
+        # Now mask out the bots that are intersecting with themselves
+        mask: JaxArray['num_bots', 'num_bots'] = jnp.eye(self.num_agents, dtype=jnp.bool)
+        is_intersecting_other_bots: JaxArray['num_bots'] = jnp.any(is_intersecting_other_bots & (~mask), axis=1)
+
+        # If any bots are intersecting with each other, then revert their position to before moving
+        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[is_intersecting_other_bots].set(state.bots.position)
+
+        # Calculate if the bots collided or if they tried to run into something
+        did_collide = is_intersecting_other_bots | (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
+
+        return new_positions, did_collide
+    
+    def _perform_turn(
+        self,
+        state: ComplexOrchardState,
+        turn_left_mask: JaxArray['num_bots'],
+        turn_right_mask: JaxArray['num_bots'],
+    ) -> JaxArray['num_bots']:
+        """
+        Perform the turning for the bots.
+
+        :param state: The current state of the environment
+        :param turn_left_mask: A boolean for each bot indicating if they are turning left
+        :param turn_right_mask: A boolean for each bot indicating if they are turning right
+
+        :return: The new orientations of all of the bots. Shape: (num_bots,)
+        """
+        return state.bots.orientation + (turn_right_mask - turn_left_mask) * ROBOT_TURN_SPEED
+    
+    def _perform_pick(
+        self,
+        state: ComplexOrchardState,
+        pick_mask: JaxArray['num_bots']
+    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_apples'], JaxArray['num_bots']]:
+        """
+        Performs the pick action for the bots.
+
+        :param state: The current state of the environment
+        :param pick_mask: A boolean for each bot indicating if they are picking up an apple
+
+        :return: The new state of the bots.holding, apples.held, and the did_try_bad_pick boolean array
+        """
+
+        # Perform the pickup action
+        nearest_apple_id: JaxArray['num_bots'] = self._nearest_apple(state)
+
+        def is_close() -> JaxArray['num_bots']:
+            """
+            Determines if each bot is close enough to their nearest apple to pick it up.
+
+            :return: a boolean array indicating if the bot is close enough to pick up the apple. Shape: (num_bots,)
+            """
+            nose = self._calculate_bot_nose(state.bots.position)
+            apple_position = state.apples.position[state.apples.id == nearest_apple_id]
+
+            return jnp.linalg.norm(apple_position - nose, axis=1) <= ROBOT_INTERACTION_DISTANCE
+
+        can_pick: JaxArray['num_bots'] = pick_mask & (state.bots.holding == -1) & jax.lax.cond(
+            nearest_apple_id == -1,
+            lambda: jnp.repeat(False, self.num_agents),
+            is_close
+        )
+        new_holding: JaxArray['num_bots'] = state.bots.holding.at[can_pick].set(nearest_apple_id[can_pick])
+
+        # Create a mask for the apples that are being picked up to update their state
+        held_mask = jax.vmap(lambda id, targets: jnp.any(id == targets), in_axes=(0, None))(state.apples.id, nearest_apple_id[can_pick])
+        new_held: JaxArray['num_apples'] = state.apples.held.at[held_mask].set(True)
+
+        return new_holding, new_held, pick_mask & (~can_pick)
+
+    def _perform_drop(
+        self,
+        state: ComplexOrchardState,
+        new_holding: JaxArray['num_bots'],
+        new_held: JaxArray['num_apples'],
+        drop_mask: JaxArray['num_bots']
+    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_apples'], JaxArray['num_apples'], JaxArray['num_apples', 2], JaxArray['num_bots'], JaxArray['num_bots']]:
+        """
+        Performs the drop action for the bots.
+
+        :param state: The current state of the environment
+        :param new_holding: The new state of the bots.holding created by the _perform_pick function
+        :param new_held: The new state of the apples.held created by the _perform_pick function
+        :param drop_mask: A boolean for each bot indicating if they are dropping an apple
+
+        :return: The new state of the bots.holding, apples.held, apples.collected, apples.position, did_try_bad_drop, did_collect_apple
+        """
+
+        can_drop: JaxArray['num_bots'] = (new_holding != -1) & drop_mask
+        dropped_apple_ids = new_holding[drop_mask]
+
+        def update_apple_position(
+            id: int,
+            current_position: JaxArray[2],
+            new_positions: JaxArray['num_dropped_apples', 2],
+            dropped_apple_ids: JaxArray['num_dropped_apples']
+        ) -> JaxArray[2]:
+            """
+            Gets either the new position or the old position of the apple based on if it was dropped.
+
+            :param id: The id of the apple we're deciding the position for
+            :param current_position: The current position of the apple we're deciding the position for
+            :param new_positions: The new positions of all of the dropped apples
+            :param dropped_apple_ids: The ids of the apples that were dropped
+
+            :return: The new position of the apple. Shape: (2,)
+            """
+
+            return jax.lax.cond(
+                jnp.any(dropped_apple_ids == id),
+                lambda: new_positions[jnp.argmax(dropped_apple_ids == id)],
+                lambda: current_position
+            )
+
+        # Update the new apple positions after being dropped
+        bot_nose_position: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
+        new_apple_position: JaxArray['num_apples', 2] = jax.vmap(update_apple_position, in_axes=(0, 0, None, None))(state.apples.id, state.apples.position, bot_nose_position[can_drop], dropped_apple_ids)
+
+        # These entities are not added to the state because they're just used for checking if the apple was deposited in a basket
+        interaction_check_entities = jax.vmap(ComplexOrchardEntity)(
+            id=jnp.arange(bot_nose_position.shape[0]),
+            position=bot_nose_position,
+            diameter=jnp.repeat(ROBOT_INTERACTION_DISTANCE + APPLE_DIAMETER[1] / 2, bot_nose_position.shape[0]),
+        )
+
+        is_near_basket: JaxArray['num_bots'] = are_any_intersecting(interaction_check_entities, state.baskets)
+        dropped_are_collected: JaxArray['num_apples'] = jax.vmap(lambda apple_id, collected_ids: jnp.any(apple_id == collected_ids), in_axes=(0, None))(state.apples.id, dropped_apple_ids[is_near_basket[can_drop]])
+        new_collected: JaxArray['num_apples'] = state.apples.collected | dropped_are_collected
+
+        new_holding: JaxArray['num_bots'] = new_holding.at[can_drop].set(-1)
+        new_held: JaxArray['num_apples'] = new_held.at[can_drop].set(False)
+
+        return new_holding, new_held, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop
+
+    def _nearest_apple(self, state: ComplexOrchardState) -> JaxArray['num_bots']:
+        """
+        Get the nearest apple id to each bot.
+
+        :param state: The current state of the environment
+
+        :return: The id of the nearest apple. Shape: (num_bots,)
+        If there are no apples, then the id is -1.
+        """
+        # TODO: Right now we calculate this for every bot, but we could optimize this by only calculating it for the bots that are trying to pick up an apple
+
+        is_apple_valid = (~state.apples.held) & (~state.apples.collected)
+        valid_apples_position: JaxArray['num_valid_apples', 2] = state.apples.position[is_apple_valid]
+        valid_apples_id: JaxArray['num_valid_apples'] = state.apples.id[is_apple_valid]
+
+        # Calculate the bot's nose position because we want to find the closest apple to the nose
+        nose_positions = self._calculate_bot_nose(state)
+
+        return jax.lax.cond(
+            valid_apples_position.shape[0] == 0,
+            lambda: jnp.repeat(-1, self.num_agents),
+            lambda: valid_apples_id[jnp.argmin(distances_between_entities(nose_positions, valid_apples_position), axis=1)],
+        )
+    
+    def _calculate_bot_nose(self, state: ComplexOrchardState) -> JaxArray['num_bots', 2]:
+        """
+        Calculate the position of the nose of the bot.
+
+        :param state: The current state of the environment
+
+        :return: The position of the nose of the bot. Shape: (num_bots, 2)
+        """
+        direction = jnp.stack([jnp.cos(state.bots.orientation) * state.bots.diameter, jnp.sin(state.bots.orientation) * state.bots.diameter], axis=1)
+        return state.bots.position + direction / 2
+
+    def _get_extra_info(self, state: ComplexOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
         n_eaten = state.apples.collected.sum() + timestep.extras.get(
             "eaten_food", jnp.float32(0)
         )
 
-        percent_eaten = (n_eaten / self.num_apples) * 100
+        percent_eaten = (n_eaten / len(state.apples.id)) * 100
         return {"percent_eaten": percent_eaten}
 
-# MODIFIED CODE FROM ORIGINAL. 
     def get_reward(
         self,
-        apples: SimpleOrchardApple,
-        eaten_this_step: chex.Array,
-    ) -> chex.Array:
-        """Returns a reward for all agents given all food items.
+        did_collide: JaxArray['num_bots'],
+        did_try_bad_pick: JaxArray['num_bots'],
+        did_try_bad_drop: JaxArray['num_bots'],
+        did_collect_apple: JaxArray['num_bots']
+    ) -> JaxArray['num_bots']:
+        """
+        Calculates the reward for each bot
 
-        Args:
-            apples (SimpleOrchardApple): All the apples in the environment.
-            eaten_this_step (chex.Array): Whether the apple was eaten or not (this step). Boolean array of len num_apples
+        :param did_collide: A boolean for each bot indicating if they collided with something
+        :param did_try_bad_pick: A boolean for each bot indicating if they tried to pick up an apple but failed
+        :param did_try_bad_drop: A boolean for each bot indicating if they dropped an apple but not in a basket
+        :param did_collect_apple: A boolean for each bot indicating if they successfully collected an apple
         """
 
-        def get_reward_per_food(
-            apple: SimpleOrchardApple,
-            eaten_this_step: chex.Array,
-        ) -> chex.Array:
-            """Returns the reward for all agents given a single apple."""
+        reward = did_collide * REWARD_OUT_OF_BOUNDS
+        reward += did_try_bad_pick * REWARD_BAD_PICK
+        reward += did_try_bad_drop * REWARD_BAD_DROP
+        reward += did_collect_apple * REWARD_COLLECT_APPLE
 
-            # Zero out all agents if food was not eaten and add penalty
-            reward = (eaten_this_step - self.penalty) * jnp.ones(self.num_bots)
-
-            # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
-            normalizer = self.num_apples
-            reward = jnp.where(
-                self.normalize_reward, jnp.nan_to_num(reward / normalizer), reward
-            )
-
-            return reward
-
-        # Get reward per food for all food items,
-        # then sum it on the agent dimension to get reward per agent.
-        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0))(
-            apples, eaten_this_step
-        )
-        return jnp.sum(reward_per_food, axis=0) #, keepdims=True).reshape(4, 3)
+        return reward
  
- # removed levels
     def observation_spec(self) -> specs.Spec[Observation]:
         """Specifications of the observation of the environment.
 
@@ -478,7 +436,6 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             self.time_limit,
         )
     
- # copied and renamed
     def action_spec(self) -> specs.MultiDiscreteArray:
         """Returns the action spec for the Level Based Foraging environment.
 
@@ -486,12 +443,11 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             specs.MultiDiscreteArray: Action spec for the environment with shape (num_agents,).
         """
         return specs.MultiDiscreteArray(
-            num_values=jnp.array([len(MOVES)] * self.num_bots),
+            num_values=jnp.array([self.action_dim] * self.num_agents),
             dtype=jnp.int32,
             name="action",
         )
     
- # copied and renamed
     def reward_spec(self) -> specs.Array:
         """Returns the reward specification for the `LevelBasedForaging` environment.
 
@@ -500,9 +456,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         Returns:
             specs.Array: Reward specification, of shape (num_agents,) for the  environment.
         """
-        return specs.Array(shape=(self.num_bots,), dtype=float, name="reward")
-    
- # copied and renamed
+        return specs.Array(shape=(self.num_agents,), dtype=float, name="reward")
+
     def discount_spec(self) -> specs.BoundedArray:
         """Describes the discount returned by the environment.
 
@@ -510,7 +465,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             discount_spec: a `specs.BoundedArray` spec.
         """
         return specs.BoundedArray(
-            shape=(self.num_bots,),
+            shape=(self.num_agents,),
             dtype=float,
             minimum=0.0,
             maximum=1.0,
