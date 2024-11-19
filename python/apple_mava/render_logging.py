@@ -55,6 +55,7 @@ def render_one_episode(orchard_version_name, config, params, max_steps, verbose=
             print("Bot Location After:", state.env_state.bots.position.tolist())
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
+            print("Apples Collected:", sum(state.env_state.apples.collected.tolist()))
             print("-"*70)
 
     # Print out the results of the episode
