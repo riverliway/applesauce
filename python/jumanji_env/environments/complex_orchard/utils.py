@@ -18,8 +18,8 @@ def normalize_angles(angles: JaxArray['num_angles']) -> JaxArray['num_angles']:
   return jnp.mod(angles + jnp.pi, 2 * jnp.pi) - jnp.pi
 
 def distances_between_entities(
-  target_entities: ComplexOrchardEntity,
-  other_entities: ComplexOrchardEntity
+  target_entities: JaxArray['num_target_entities', 2],
+  other_entities: JaxArray['num_other_entities', 2]
 ) -> JaxArray['num_target_entities', 'num_other_entities']:
   """
   Calculate the distance between the target entities and each of the other entities.
@@ -29,7 +29,7 @@ def distances_between_entities(
 
   :return: The distance between the target entities and the other entities. Shape: (num_target_entities, num_other_entities)
   """
-  dist_calc = lambda target, other: jnp.linalg.norm(target.position - other.position, axis=1)
+  dist_calc = lambda target, other: jnp.linalg.norm(target - other, axis=1)
 
   return jax.vmap(dist_calc, in_axes=(0, None))(target_entities, other_entities)
 
@@ -43,7 +43,7 @@ def are_intersecting(target_entities: ComplexOrchardEntity, other_entities: Comp
   :return: A boolean array indicating if the target entities are intersecting with the other entities. Shape: (num_target_entities, num_other_entities)
   """
   # Calculate the distance between the target entities and the other entities
-  distances = distances_between_entities(target_entities, other_entities)
+  distances = distances_between_entities(target_entities.position, other_entities.position)
 
   # Calcuate the sum of the diameters of the target and other entities
   radius_calc = lambda target, other: (target + other) / 2
@@ -103,7 +103,7 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
   is_intersecting_other_bots: JaxArray['num_bots * 2', 'num_bots'] = are_intersecting(new_bots, state.bots)
 
   # Now mask out the bots that are intersecting with themselves
-  mask: JaxArray['num_bots * 2', 'num_bots'] = jnp.repeat(jnp.eye(4, dtype=jnp.bool), 2, axis=0)
+  mask: JaxArray['num_bots * 2', 'num_bots'] = jnp.repeat(jnp.eye(num_bots, dtype=jnp.bool), 2, axis=0)
   is_intersecting_other_bots: JaxArray['num_bots * 2'] = jnp.any(is_intersecting_other_bots & (~mask), axis=1)
 
   # Check if the bot is within the bounds
