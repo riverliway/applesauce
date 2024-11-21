@@ -26,22 +26,17 @@ class SimpleOrchardEntity:
     id: chex.Array # ()
     position: chex.Array #(2,)
 
+@dataclass
+class SimpleOrchardAgent(SimpleOrchardEntity):
+    """
+    An agent is an entity that can move and load food.
 
-### We decided to exclude the creation of the Agent class as a specific type. ###
-### Leaving original code here for future reference. ###
-
-# @dataclass
-# class Agent(Entity):
-#     """
-#     An agent is an entity that can move and load food.
-
-#     id: unique number representing only this food.
-#     position: the position of this food.
-#     level: the level of this food.
-#     loading: whether the agent is currently loading food.
-#     """
-
-#     loading: chex.Array  # () - bool: is loading food
+    id: unique number representing only this food.
+    position: the position of this food.
+    level: the level of this food.
+    loading: whether the agent is currently loading food.
+    """
+    loading: chex.Array  # () - bool: is loading food
 
 # This is replacing Food class.
 @dataclass
@@ -56,7 +51,6 @@ class SimpleOrchardApple(SimpleOrchardEntity):
 # agents were changed to bots and now directly calling the Entity class as opposed to an Agent subclass
 # trees also added to the class with same logic
 # apples replaces 'food_item'
-# time replaces 'step_count'
 @dataclass
 class SimpleOrchardState:
     """
@@ -66,7 +60,7 @@ class SimpleOrchardState:
     bots: SimpleOrchardEntity # List of bots (pytree structure)
     trees: SimpleOrchardEntity # List of trees (pytree structure)
     apples: SimpleOrchardApple # List of apples (pytree structure)
-    time: chex.Array # ()
+    step_count: chex.Array # ()
     key: chex.PRNGKey # (2,)
 
 # this replaces the Observation class.
@@ -78,4 +72,4 @@ class SimpleOrchardObservation(NamedTuple):
     # in the format (num_agents, [apple[i].position[0], apple[i].position[1], ..., bot[i].position[0], bot[i].position[1], ...])
     agents_view: chex.Array # (num_agents, 2 * (num_apples + num_trees + num_bots))
     action_mask: chex.Array # (num_agents, 6) since there are 6 actions in the simple env [UP, DOWN, LEFT, RIGHT, PICK, IDLE]
-    time: chex.Array # ()
+    step_count: chex.Array # ()

@@ -12,10 +12,10 @@ from numpy.typing import NDArray
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
-from jumanji_env.environments.simple_orchard.constants import MOVES
+from jumanji_env.environments.simple_orchard.constants import MOVES, LOAD
 from jumanji_env.environments.simple_orchard.generator import SimpleOrchardGenerator
 from jumanji_env.environments.simple_orchard.observer import SimpleOrchardObserver
-from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardEntity
+from jumanji_env.environments.simple_orchard.orchard_types import SimpleOrchardApple, SimpleOrchardObservation, SimpleOrchardState, SimpleOrchardAgent, SimpleOrchardEntity
 
 # directly from jumanji
 import jumanji.environments.routing.lbf.utils as utils
@@ -28,7 +28,8 @@ from jumanji.viewer import Viewer
 # we are still calling Observation in functions so importing. Assuming this needs to be addressed.
 from mava.types import Observation
 
-
+##################### The classes and functions have been re-organized to match the 
+##################### order that they appear in the equivalent jumanji file.
 
 # replaces `LevelBasedForaging` Class
 # why removal of specs.MultiDiscreteArray, Observation from class arguments?
@@ -109,23 +110,24 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
     - `viewer`: Viewer to render the environment. Defaults to `LevelBasedForagingViewer`.
     """
 
-    # why removal of grid observation
-    # noticed fov is hard set which explains why it is not in generator
+    # Only setting up a single observer to match VectorObserver
     # removal of viewer
-    # added super.init -- SASHA REPO
-
+    # level functionality removed
+    # fov hard-coded at 5
     def __init__(
         self,
         generator: Optional[SimpleOrchardGenerator] = None,
-        time_limit: int = 100,
+        time_limit: int = 200,
         normalize_reward: bool = True,
-        penalty: float = 0.0,
+        penalty: float = 0.01,
     ) -> None:
         super().__init__()
 
         self._generator = generator or SimpleOrchardGenerator(
             width=10,
-            height=11
+            height=10,
+            num_bots=2,
+            num_apples=10,
         )
         self.time_limit = time_limit
         self.width: int = self._generator.get_width()
@@ -180,183 +182,8 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         timestep.extras = self._get_extra_info(state, timestep)
 
         return state, timestep
-
-# Copied from `lbf.utils.py`
-# adapted for width and height, naming conventions
-    def _simulate_agent_movement(
-        self, agent: SimpleOrchardEntity, action: chex.Array, apples: SimpleOrchardApple, agents: SimpleOrchardEntity
-    ) -> SimpleOrchardEntity:
-        """
-        Move the agent based on the specified action.
-
-        Args:
-            agent (SimpleOrchardEntity): The agent to move.
-            action (chex.Array): The action to take.
-            apples (SimpleOrchardApple): All apples in the grid.
-            agents (SimpleOrchardEntity): All agents in the grid.
-
-        Returns:
-            Agent: The agent with its updated position.
-        """
-
-        # Calculate the new position based on the chosen action
-        new_position = agent.position + MOVES[action]
-
-        # Check if the new position is out of bounds
-        out_of_bounds = jnp.any((new_position < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
-
-        # Check if the new position is occupied by food or another agent
-        agent_at_position = jnp.any(
-            jnp.all(new_position == agents.position, axis=1) & (agent.id != agents.id)
-        )
-        apple_at_position = jnp.any(
-            jnp.all(new_position == apples.position, axis=1) & ~apples.collected
-        )
-        entity_at_position = jnp.any(agent_at_position | apple_at_position)
-
-        # Move the agent to the new position if it's a valid position,
-        # otherwise keep the current position
-        new_agent_position = jnp.where(
-            out_of_bounds | entity_at_position, agent.position, new_position
-        )
-
-        # Return the agent with the updated position
-        return SimpleOrchardEntity(
-            id=agent.id,
-            position=new_agent_position
-        )
-
-# Copied from `lbf.utils.py`
-    def _flag_duplicates(self, a: chex.Array) -> chex.Array:
-        """Return a boolean array indicating which elements of `a` are duplicates.
-
-        Example:
-            a = jnp.array([1, 2, 3, 2, 1, 5])
-            flag_duplicates(a)  # jnp.array([True, False, True, False, True, True])
-        """
-        # https://stackoverflow.com/a/11528078/5768407
-        _, indices, counts = jnp.unique(
-            a, return_inverse=True, return_counts=True, size=len(a), axis=0
-        )
-        return ~(counts[indices] == 1)
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def _fix_collisions(self, moved_agents: SimpleOrchardEntity, original_agents: SimpleOrchardEntity) -> SimpleOrchardEntity:
-        """
-        Fix collisions in the moved agents by resolving conflicts with the original agents.
-        If a number 'N' of agents end up in the same position after the move, the initial
-        position of the agents is retained.
-
-        Args:
-            moved_agents (Agent): Agents with potentially updated positions.
-            original_agents (Agent): Original agents with their initial positions.
-
-        Returns:
-            Agent: Agents with collisions resolved.
-        """
-        # Detect duplicate positions
-        duplicates = self._flag_duplicates(moved_agents.position)
-        duplicates = duplicates.reshape((duplicates.shape[0], -1))
-
-        # If there are duplicates, use the original agent position.
-        new_positions = jnp.where(
-            duplicates,
-            original_agents.position,
-            moved_agents.position,
-        )
-
-        # Recreate agents with new positions
-        agents: SimpleOrchardEntity = jax.vmap(SimpleOrchardEntity)(
-            id=original_agents.id,
-            position=new_positions
-        )
-        return agents
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def _update_agent_positions(
-        self, agents: SimpleOrchardEntity, actions: chex.Array, apples: SimpleOrchardApple
-    ) -> Any:
-        """
-        Update agent positions based on actions and resolve collisions.
-
-        Args:
-            agents (SimpleOrchardEntity): The current state of agents.
-            actions (chex.Array): Actions taken by agents.
-            apples (SimpleOrchardApple): All apples in the grid.
-
-        Returns:
-            Agent: Agents with updated positions.
-        """
-        # Move the agent to a valid position
-        moved_agents = jax.vmap(self._simulate_agent_movement, (0, 0, None, None))(
-            agents,
-            actions,
-            apples,
-            agents
-        )
-
-        # Fix collisions
-        moved_agents = self._fix_collisions(moved_agents, agents)
-
-        return moved_agents
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
-    def are_entities_adjacent(self, entity_a: SimpleOrchardEntity, entity_b: SimpleOrchardEntity) -> chex.Array:
-        """
-        Check if two entities are adjacent in the grid.
-
-        Args:
-            entity_a (SimpleOrchardEntity): The first entity.
-            entity_b (SimpleOrchardEntity): The second entity.
-
-        Returns:
-            chex.Array: True if entities are adjacent, False otherwise.
-        """
-        distance = jnp.abs(entity_a.position - entity_b.position)
-        print("Entity distances:", distance)
-        return jnp.sum(distance) == 1
-
-# Copied from `lbf.utils.py`
-# UTIL COPY BUT WITH HEAVY MODIFICATIONS, 
-# LIKELY SOURCE FOR TRAINING ISSUES. . . 
-    def _eat_food(self, agents: SimpleOrchardEntity, apple: SimpleOrchardApple) -> Tuple[SimpleOrchardApple, chex.Array]:
-        """Try to eat the provided food if possible.
-
-        Args:
-            agents(Agent): All agents in the grid.
-            apple(SimpleOrchardApple): The food to attempt to eat.
-
-        Returns:
-            new_food (Food): Updated state of the food, indicating whether it was eaten.
-            is_food_eaten_this_step (chex.Array): Whether or not the food was eaten at this step.
-        """
-
-        def is_eaten(agent: SimpleOrchardEntity, apple: SimpleOrchardApple) -> chex.Array:
-            """Return 1 if the agent is adjacent to the food, else 0."""
-            return jax.lax.select(
-                self.are_entities_adjacent(agent, apple) & ~apple.collected,
-                1,
-                0,
-            )
-
-        # Get the level of all adjacent agents that are trying to load the food
-        ###### BASED ON HOW we have this set up we are not including whether the agents
-        ###### trying to load food. 
-        adj_loading_agents_levels = jax.vmap(is_eaten, (0, None))(agents, apple)
-
-        # If the food has already been eaten or is not loaded, the sum will be equal to 0
-        is_food_eaten_this_step = jnp.sum(adj_loading_agents_levels) > 0
-
-        # Set food to eaten if it was eaten.
-        new_food = apple.replace(collected=is_food_eaten_this_step | apple.collected)  # type: ignore
-
-        return new_food, is_food_eaten_this_step
-
-# Copied from `lbf.utils.py`
-# adapted naming conventions
+    
+    
     def step(self, state: SimpleOrchardState, actions: chex.Array) -> Tuple[SimpleOrchardState, TimeStep]:
         """Simulate one step of the environment.
 
@@ -371,26 +198,25 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         # Move agents, fix collisions that may happen and set loading status.
         moved_agents = self._update_agent_positions(state.bots, actions, state.apples)
 
-        # Eat the food
-        new_apples, eaten_this_step = jax.vmap(
-            self._eat_food, (None, 0)
+        # Collect the food
+        apple_items, collected_this_step, all_food_collected = jax.vmap(
+            self._collect_food, (None, 0)
         )(moved_agents, state.apples)
-        print("eaten_this_step:", eaten_this_step)
-        print("new_apples:", new_apples)
-        reward = self.get_reward(new_apples, eaten_this_step)
+
+        reward = self.get_reward(apple_items, all_food_collected, collected_this_step)
 
         state = SimpleOrchardState(
             bots=moved_agents,
-            apples=new_apples,
+            apples=apple_items,
             trees=state.trees,
-            time=state.time + 1,
+            step_count=state.step_count + 1,
             key=state.key,
         )
         observation = self._observer.state_to_observation(state)
 
         # First condition is truncation, second is termination.
         terminate = jnp.all(state.apples.collected)
-        truncate = state.time >= self.time_limit
+        truncate = state.step_count >= self.time_limit
 
         timestep = jax.lax.switch(
             terminate + 2 * truncate,
@@ -422,51 +248,72 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
 
     def _get_extra_info(self, state: SimpleOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
-        n_eaten = state.apples.collected.sum() + timestep.extras.get(
-            "eaten_food", jnp.float32(0)
+        n_collected = state.apples.collected.sum() + timestep.extras.get(
+            "collected_food", jnp.float32(0)
         )
 
-        percent_eaten = (n_eaten / self.num_apples) * 100
-        return {"percent_eaten": percent_eaten}
+        percent_collected = (n_collected / self.num_apples) * 100
+        return {"percent_collected": percent_collected}
 
-# MODIFIED CODE FROM ORIGINAL. 
+    # MODIFIED CODE FROM ORIGINAL. 
+    # naming conventions
+    # treated code the same but with the original 'level' logic set to be 1 for all entities. 
     def get_reward(
         self,
         apples: SimpleOrchardApple,
-        eaten_this_step: chex.Array,
+        all_food_collected: chex.Array,
+        collected_this_step: chex.Array,
     ) -> chex.Array:
         """Returns a reward for all agents given all food items.
 
         Args:
             apples (SimpleOrchardApple): All the apples in the environment.
-            eaten_this_step (chex.Array): Whether the apple was eaten or not (this step). Boolean array of len num_apples
+            all_food_collected (chex.Array): Count of all agents adjacent to all foods. 
+            collected_this_step (chex.Array): Whether the apple was collected or not (this step). Boolean array of len num_apples
         """
 
         def get_reward_per_food(
             apple: SimpleOrchardApple,
-            eaten_this_step: chex.Array,
+            all_food_collected: chex.Array,
+            collected_this_step: chex.Array,
         ) -> chex.Array:
             """Returns the reward for all agents given a single apple."""
 
-            # Zero out all agents if food was not eaten and add penalty
-            reward = (eaten_this_step - self.penalty) * jnp.ones(self.num_bots)
+            # If the food has already been eaten or is not loaded, the sum will be equal to 0
+            sum_agents = jnp.sum(all_food_collected)
+            
+            # penalize agents for not collecting apples
+            no_apple_penalty = jnp.where(
+                (sum_agents != 0),
+                self.penalty,
+                0,
+            )
+            
+            # # penalize agents for trying to pick up apples when there isn't one
+            # invalid_load_penalty = jnp.where(
+            #     agent.loading & (collected_this_step == 0), 2 * self.penalty, 0
+            # )
 
+            # Zero out all agents if food was not collected and add penalty
+            reward = (all_food_collected * collected_this_step) - no_apple_penalty # - invalid_load_penalty
+            
             # jnp.nan_to_num: Used in the case where no agents are adjacent to the food
-            normalizer = self.num_apples
+            normalizer = jnp.maximum(sum_agents * self.num_apples, 1e-8)
             reward = jnp.where(
                 self.normalize_reward, jnp.nan_to_num(reward / normalizer), reward
             )
-
             return reward
 
         # Get reward per food for all food items,
         # then sum it on the agent dimension to get reward per agent.
-        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0))(
-            apples, eaten_this_step
+        reward_per_food = jax.vmap(get_reward_per_food, in_axes=(0, 0, 0))(
+            apples, all_food_collected, collected_this_step
         )
-        return jnp.sum(reward_per_food, axis=0) #, keepdims=True).reshape(4, 3)
+        return jnp.sum(reward_per_food, axis=0) 
  
- # removed levels
+    ######## render and animate functions are ommitted ######################
+    
+    # removed levels
     def observation_spec(self) -> specs.Spec[Observation]:
         """Specifications of the observation of the environment.
 
@@ -478,7 +325,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             self.time_limit,
         )
     
- # copied and renamed
+    # copied and renamed
     def action_spec(self) -> specs.MultiDiscreteArray:
         """Returns the action spec for the Level Based Foraging environment.
 
@@ -491,7 +338,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             name="action",
         )
     
- # copied and renamed
+    # copied and renamed
     def reward_spec(self) -> specs.Array:
         """Returns the reward specification for the `LevelBasedForaging` environment.
 
@@ -502,7 +349,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
         """
         return specs.Array(shape=(self.num_bots,), dtype=float, name="reward")
     
- # copied and renamed
+    # copied and renamed
     def discount_spec(self) -> specs.BoundedArray:
         """Describes the discount returned by the environment.
 
@@ -516,3 +363,227 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             maximum=1.0,
             name="discount",
         )
+
+################### THE FOLLOWING FUNCTIONS WERE BROUGHT OVER FROM `lbf.utils.py` ###########################################
+
+    # identical besides state naming conventions
+    def are_entities_adjacent(self, entity_a: SimpleOrchardEntity, entity_b: SimpleOrchardEntity) -> chex.Array:
+        """
+        Check if two entities are adjacent in the grid.
+
+        Args:
+            entity_a (SimpleOrchardEntity): The first entity.
+            entity_b (SimpleOrchardEntity): The second entity.
+
+        Returns:
+            chex.Array: True if entities are adjacent, False otherwise.
+        """
+        distance = jnp.abs(entity_a.position - entity_b.position)
+        return jnp.sum(distance) == 1
+    
+    #identical
+    def _flag_duplicates(self, a: chex.Array) -> chex.Array:
+        """Return a boolean array indicating which elements of `a` are duplicates.
+
+        Example:
+            a = jnp.array([1, 2, 3, 2, 1, 5])
+            flag_duplicates(a)  # jnp.array([True, False, True, False, True, True])
+        """
+        # https://stackoverflow.com/a/11528078/5768407
+        _, indices, counts = jnp.unique(
+            a, return_inverse=True, return_counts=True, size=len(a), axis=0
+        )
+        return ~(counts[indices] == 1)
+    
+    # naming conventions changed
+    # out of bounds code modified for width & height
+    def _simulate_agent_movement(
+        self, agent: SimpleOrchardAgent, action: chex.Array, apples: SimpleOrchardApple, agents: SimpleOrchardAgent
+    ) -> SimpleOrchardAgent:
+        """
+        Move the agent based on the specified action.
+
+        Args:
+            agent (SimpleOrchardAgent): The agent to move.
+            action (chex.Array): The action to take.
+            apples (SimpleOrchardApple): All apples in the grid.
+            agents (SimpleOrchardAgent): All agents in the grid.
+
+        Returns:
+            Agent: The agent with its updated position.
+        """
+
+        # Calculate the new position based on the chosen action
+        new_position = agent.position + MOVES[action]
+        
+        # Check if the new position is out of bounds
+        out_of_bounds = jnp.any((new_position < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
+
+        # Check if the new position is occupied by food or another agent
+        agent_at_position = jnp.any(
+            jnp.all(new_position == agents.position, axis=1) & (agent.id != agents.id)
+        )
+        apple_at_position = jnp.any(
+            jnp.all(new_position == apples.position, axis=1) & ~apples.collected
+        )
+        entity_at_position = jnp.any(agent_at_position | apple_at_position)
+
+        # Move the agent to the new position if it's a valid position,
+        # otherwise keep the current position
+        new_agent_position = jnp.where(
+            out_of_bounds | entity_at_position, agent.position, new_position
+        )
+
+        # Return the agent with the updated position
+        return agent.replace(position=new_agent_position)  # type: ignore        )
+
+    # adapted naming conventions
+    # grid size removed, height and width being used implictly 
+    def _update_agent_positions(
+        self, agents: SimpleOrchardAgent, actions: chex.Array, apples: SimpleOrchardApple
+    ) -> Any:
+        """
+        Update agent positions based on actions and resolve collisions.
+
+        Args:
+            agents (SimpleOrchardAgent): The current state of agents.
+            actions (chex.Array): Actions taken by agents.
+            apples (SimpleOrchardApple): All apples in the grid.
+
+        Returns:
+            Agent: Agents with updated positions.
+        """
+        # Move the agent to a valid position
+        moved_agents = jax.vmap(self._simulate_agent_movement, (0, 0, None, None))(
+            agents,
+            actions,
+            apples,
+            agents
+        )
+
+        # Fix collisions
+        moved_agents = self._fix_collisions(moved_agents, agents)
+        
+        moved_agents = jax.vmap(lambda agent, action: agent.replace(loading=(action == LOAD)))(
+            moved_agents, actions
+        )
+
+        return moved_agents
+    
+
+    # adapted naming conventions
+    # omission of agent level from return
+    def _fix_collisions(self, moved_agents: SimpleOrchardAgent, original_agents: SimpleOrchardAgent) -> SimpleOrchardAgent:
+        """
+        Fix collisions in the moved agents by resolving conflicts with the original agents.
+        If a number 'N' of agents end up in the same position after the move, the initial
+        position of the agents is retained.
+
+        Args:
+            moved_agents (Agent): Agents with potentially updated positions.
+            original_agents (Agent): Original agents with their initial positions.
+
+        Returns:
+            Agent: Agents with collisions resolved.
+        """
+        # Detect duplicate positions
+        duplicates = self._flag_duplicates(moved_agents.position)
+        duplicates = duplicates.reshape((duplicates.shape[0], -1))
+
+        # If there are duplicates, use the original agent position.
+        new_positions = jnp.where(
+            duplicates,
+            original_agents.position,
+            moved_agents.position,
+        )
+
+        # Recreate agents with new positions
+        agents: SimpleOrchardAgent = jax.vmap(SimpleOrchardAgent)(
+            id=original_agents.id,
+            position=new_positions,
+            loading=original_agents.loading,
+        )
+        return agents    
+
+
+    # UTIL COPY BUT WITH HEAVY MODIFICATIONS, 
+    # LIKELY SOURCE FOR TRAINING ISSUES. . .
+    # see notes within function for more details
+    def _collect_food(self, agents: SimpleOrchardAgent, apple: SimpleOrchardApple) -> Tuple[SimpleOrchardApple, chex.Array]:
+        """Try to eat the provided food if possible.
+
+        Args:
+            agents(Agent): All agents in the grid.
+            apple(SimpleOrchardApple): The food to attempt to eat.
+
+        Returns:
+            new_food (Food): Updated state of the food, indicating whether it was eaten.
+            is_food_eaten_this_step (chex.Array): Whether or not the food was eaten at this step.
+        """
+        
+        # instead of getting adjacent agent levels, we are returning a static 1
+        # this is acting as our check for agents that can and try to collect
+        def is_collected(agent: SimpleOrchardAgent, apple: SimpleOrchardApple) -> chex.Array:
+            """Return 1 if the agent is adjacent to the food, else 0."""
+            return jax.lax.select(
+                self.are_entities_adjacent(agent, apple) & agent.loading & ~apple.collected,
+                1,
+                0,
+            )
+
+        # getting all adjacent agents that are trying to load food
+        all_food_collected = jax.vmap(is_collected, (0, None))(agents, apple)
+
+        # If the food has already been collected or is not loaded, the sum will be equal to 0
+        food_collected_this_step = jnp.sum(all_food_collected) > 0
+
+        # Set food to collected if it was collected
+        new_food = apple.replace(collected=food_collected_this_step | apple.collected)  # type: ignore
+        
+        # original function has a third return of agent levels. leaving it here, because it factors into partial rewards
+        return new_food, food_collected_this_step, all_food_collected 
+
+    # function originally missing from util copy over
+    # updated for proper naming conventions
+    # modified to address height and width
+    def compute_action_mask(agent: SimpleOrchardAgent, state: SimpleOrchardState) -> chex.Array:
+        """
+        Calculate the action mask for a given agent based on the current state.
+
+        Args:
+            agent (Agent): The agent for which to calculate the action mask.
+            state (State): The current state of the environment.
+
+        Returns:
+            chex.Array: A boolean array representing the action mask for the given agent,
+                where `True` indicates a valid action, and `False` indicates an invalid action.
+        """
+        next_positions = agent.position + MOVES
+
+        def check_pos_fn(next_pos: Any, entities: SimpleOrchardEntity, condition: bool) -> Any:
+            return jnp.any(jnp.all(next_pos == entities.position, axis=-1) & condition)
+
+        # Check if any agent is in a next position.
+        agent_occupied = jax.vmap(check_pos_fn, (0, None, None))(
+            next_positions, state.bots, (state.bots.id != agent.id)
+        )
+
+        # Check if any food is in a next position (Food must be uneaten)
+        food_occupied = jax.vmap(check_pos_fn, (0, None, None))(
+            next_positions, state.apples, ~state.apples.collected
+        )
+        # Check if the next position is out of bounds
+        out_of_bounds = jnp.any((next_positions < 0) | (new_position[0] >= self.width) | (new_position[1] >= self.height))
+
+        action_mask = ~(food_occupied | agent_occupied | out_of_bounds)
+
+        # Check if the agent can load food (if placed in the neighborhood)
+        num_adj_food = (
+            jax.vmap(are_entities_adjacent, (0, None))(state.apples, agent)
+            & ~state.apples.collected
+        )
+        is_food_adj = jnp.sum(num_adj_food) > 0
+
+        action_mask = jnp.where(is_food_adj, action_mask, action_mask.at[-1].set(False))
+
+        return action_mask
