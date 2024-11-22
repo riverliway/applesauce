@@ -64,7 +64,7 @@ class ComplexOrchardObserver(abc.ABC):
     The action mask is a boolean array of shape (num_agents, 7). '7' is the number of actions.
     """
     return specs.BoundedArray(
-      shape=(self.num_bots, NUM_ACTIONS),
+      shape=(self.num_agents, NUM_ACTIONS),
       dtype=bool,
       minimum=False,
       maximum=True,
@@ -156,20 +156,20 @@ class BasicObserver(ComplexOrchardObserver):
       normalize_angles(jnp.arctan2(nearest_target_position[1] - bot_position[1], nearest_target_position[0] - bot_position[0]) - bot_orientation)
     ])
   
-  def _create_action_mask(self, state: ComplexOrchardState) -> JaxArray['num_bots', 'NUM_ACTIONS']:
+  def _create_action_mask(self, state: ComplexOrchardState) -> JaxArray['num_agents', 'NUM_ACTIONS']:
     """
     Creates the action mask for all agents.
 
     :param state: The current state of the environment
 
-    Returns: The boolean action mask for all agents. Shape: (num_bots, 7)
+    Returns: The boolean action mask for all agents. Shape: (num_agents, 7)
     """
 
-    possible_forward_backward: JaxArray['num_bots', 2] = bots_possible_moves(state)[:, :, 2]
-    possible_actions: JaxArray['num_bots', 'NUM_ACTIONS'] = jnp.ones((len(state.bots.diameter), NUM_ACTIONS), dtype=bool)
+    possible_forward_backward: JaxArray['num_agents', 2] = bots_possible_moves(state)[:, :, 2]
+    possible_actions: JaxArray['num_agents', 'NUM_ACTIONS'] = jnp.ones((len(state.bots.diameter), NUM_ACTIONS), dtype=bool)
 
     # The 1:2 is a references to the FORWARD = 1 and BACKWARD = 2 actions defined in the constants.py file
-    possible_actions: JaxArray['num_bots', 'NUM_ACTIONS'] = possible_actions.at[:, 1:2].set(possible_forward_backward > 0.5)
+    possible_actions: JaxArray['num_agents', 'NUM_ACTIONS'] = possible_actions.at[:, 1:2].set(possible_forward_backward > 0.5)
 
     return possible_actions
 
@@ -185,10 +185,10 @@ class BasicObserver(ComplexOrchardObserver):
         and step count for all agents.
     """
 
-    num_bots = len(state.bots.diameter)
+    num_agents = len(state.bots.diameter)
 
     # Placeholder for the agents' views
-    agents_view: JaxArray['num_bots', 3] = jax.vmap(self._observe, in_axes=(0, 0, 0, 0, None, None, None, None))(
+    agents_view: JaxArray['num_agents', 3] = jax.vmap(self._observe, in_axes=(0, 0, 0, 0, None, None, None, None))(
       state.bots.position,
       state.bots.orientation,
       state.bots.job,
