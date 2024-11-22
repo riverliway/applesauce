@@ -392,7 +392,7 @@ def learner_setup(
     key, actor_net_key, critic_net_key = keys
 
     # Define network and optimiser.
-    actor_network = Actor(action_dim=6)
+    actor_network = Actor(action_dim=env.action_dim)
     critic_network = Critic()
 
     actor_lr = make_learning_rate(config.system.actor_lr, config)
