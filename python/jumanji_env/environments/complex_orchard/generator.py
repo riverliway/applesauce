@@ -246,8 +246,8 @@ class ComplexOrchardGenerator:
     Randomly creates an initial orchard state
     """
 
-    tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
-    tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
+    tree_row_distance = float(self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0])
+    tree_col_distance = float(self.random_normal(key, (1,), TREE_DISTANCE_COL)[0])
 
     (
       tree_pos_key,
