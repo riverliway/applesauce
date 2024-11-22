@@ -210,7 +210,7 @@ class BasicObserver(ComplexOrchardObserver):
 
     return specs.Spec(
       agents_view=specs.BoundedArray(
-        shape=(self.num_bots, 3),
+        shape=(self.num_agents, 3),
         dtype=jnp.float32,
         minimum=-jnp.inf,
         maximum=jnp.inf,
