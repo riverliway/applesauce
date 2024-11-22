@@ -70,6 +70,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         self._observer = BasicObserver(
             fov=self.fov,
+            num_agents = self.num_agents,
             width=self.width,
             height=self.height
         )
