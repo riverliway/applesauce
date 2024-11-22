@@ -386,7 +386,7 @@ def learner_setup(
     n_devices = len(jax.devices())
 
     # Get number of agents.
-    config.system.num_agents = env.num_bots
+    config.system.num_agents = env.num_agents
 
     # PRNG keys.
     key, actor_net_key, critic_net_key = keys
