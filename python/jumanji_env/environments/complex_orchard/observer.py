@@ -77,7 +77,7 @@ class ComplexOrchardObserver(abc.ABC):
       dtype=jnp.int32,
       minimum=0,
       maximum=time_limit,
-      name="time",
+      name="step_count",
     )
 
 class BasicObserver(ComplexOrchardObserver):
@@ -201,7 +201,7 @@ class BasicObserver(ComplexOrchardObserver):
     # Placeholder for the action mask
     action_mask = self._create_action_mask(state)
 
-    return ComplexOrchardObservation(agents_view=agents_view, action_mask=action_mask, time=state.time)
+    return ComplexOrchardObservation(agents_view=agents_view, action_mask=action_mask, step_count=state.step_count)
 
   def observation_spec(self, time_limit: int) -> specs.Spec[ComplexOrchardObservation]:
     """
@@ -217,5 +217,5 @@ class BasicObserver(ComplexOrchardObserver):
         name="agents_view"
       ),
       action_mask=self._action_mask_spec(),
-      time=self._time_spec(time_limit)
+      step_count=self._time_spec(time_limit)
     )

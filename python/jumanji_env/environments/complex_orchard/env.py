@@ -142,7 +142,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         new_state = ComplexOrchardState(
             key=state.key,
-            time=state.time + 1,
+            step_count=state.step_count + 1,
             width=state.width,
             height=state.height,
             bots=new_bots,
@@ -153,7 +153,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         # Determine if the episode is over
         terminate = jnp.all(state.apples.collected)
-        truncate = state.time >= self.time_limit
+        truncate = state.step_count >= self.time_limit
         observation = self._observer.state_to_observation(state)
 
         timestep = jax.lax.switch(

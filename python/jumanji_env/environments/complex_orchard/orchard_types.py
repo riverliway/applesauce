@@ -74,7 +74,6 @@ class ComplexOrchardBasket(ComplexOrchardEntity):
 # agents were changed to bots and now directly calling the Entity class as opposed to an Agent subclass
 # trees also added to the class with same logic
 # apples replaces 'food_item'
-# time replaces 'step_count'
 @dataclass
 class ComplexOrchardState:
     """
@@ -85,7 +84,7 @@ class ComplexOrchardState:
     trees: ComplexOrchardTree # List of trees (pytree structure)
     apples: ComplexOrchardApple # List of apples (pytree structure)
     baskets: ComplexOrchardBasket # List of baskets (pytree structure)
-    time: JaxArray # ()
+    step_count: JaxArray # ()
     width: JaxArray # ()
     height: JaxArray # ()
     key: chex.PRNGKey
@@ -96,4 +95,4 @@ class ComplexOrchardObservation(NamedTuple):
     """
     agents_view: JaxArray['num_bots', 'num_observations'] # the view of the agents, it is dependent on which observer is used
     action_mask: JaxArray['num_bots', 'NUM_ACTIONS'] # NUM_ACTIONS will be 7 since there are 7 actions [IDLE, UP, DOWN, LEFT, RIGHT, PICK, DROP]
-    time: JaxArray # ()
+    step_count: JaxArray # ()

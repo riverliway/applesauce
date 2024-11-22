@@ -300,11 +300,11 @@ class ComplexOrchardGenerator:
       held=basket_orientations
     )
 
-    time = jnp.array(0, jnp.int32)
+    step_count = jnp.array(0, jnp.int32)
 
     return ComplexOrchardState(
       key=key,
-      time=time,
+      step_count=step_count,
       width=jnp.array(self.width, jnp.int32),
       height=jnp.array(self.height, jnp.int32),
       bots=bots,
