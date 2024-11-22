@@ -93,12 +93,12 @@ class BasicObserver(ComplexOrchardObserver):
   It is completely blind to everything else
   """
   
-  def __init__(self, fov: int, width: int, height: int) -> None:
+  def __init__(self, fov: int, width: int, height: int, num_agents: int) -> None:
     """
     Initalizes the basic observer object
     """
 
-    super().__init__(fov, width, height)
+    super().__init__(fov, width, height, num_agents)
 
   def _observe(
     self,
