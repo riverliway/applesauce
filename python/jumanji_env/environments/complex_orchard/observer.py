@@ -26,7 +26,7 @@ class ComplexOrchardObserver(abc.ABC):
   Base class for the complex orchard observers.
   """
 
-  def __init__(self, fov: int, width: int, height: int) -> None:
+  def __init__(self, fov: int, width: int, height: int, num_agents: int) -> None:
     """
     Initalizes the observer object
     """
@@ -34,6 +34,7 @@ class ComplexOrchardObserver(abc.ABC):
     self.fov = fov
     self.width = width
     self.height = height
+    self.num_agents = num_agents
 
   @abc.abstractmethod
   def state_to_observation(self, state: ComplexOrchardState) -> ComplexOrchardObservation:
