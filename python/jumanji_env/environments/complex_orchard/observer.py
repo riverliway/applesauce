@@ -210,6 +210,8 @@ class BasicObserver(ComplexOrchardObserver):
     """
 
     return specs.Spec(
+      ComplexOrchardObservation,
+      "ComplexOrchardObservationSpec",
       agents_view=specs.BoundedArray(
         shape=(self.num_agents, 3),
         dtype=jnp.float32,
