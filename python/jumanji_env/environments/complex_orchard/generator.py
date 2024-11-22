@@ -80,8 +80,8 @@ class ComplexOrchardGenerator:
     """
     
     # Ensure concrete inputs for tree distances
-    tree_row_distance = float(tree_row_distance)
-    tree_col_distance = float(tree_col_distance)
+    tree_row_distance = tree_row_distance.astype(float)
+    tree_col_distance = tree_col_distance.astype(float)
     
     tree_x = jnp.arange(tree_row_distance, self.width - tree_row_distance, tree_row_distance / 2)
     tree_y = jnp.arange(tree_col_distance * 2, self.height - tree_col_distance / 2, tree_col_distance / 2)
