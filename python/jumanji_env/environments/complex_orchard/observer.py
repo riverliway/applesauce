@@ -168,7 +168,7 @@ class BasicObserver(ComplexOrchardObserver):
     possible_actions: JaxArray['num_bots', 'NUM_ACTIONS'] = jnp.ones((len(state.bots.diameter), NUM_ACTIONS), dtype=bool)
 
     # The 1:2 is a references to the FORWARD = 1 and BACKWARD = 2 actions defined in the constants.py file
-    possible_actions: JaxArray['num_bots', 'NUM_ACTIONS'] = possible_actions.at[:, 1:2].set(possible_forward_backward > 0.5)
+    possible_actions: JaxArray['num_bots', 'NUM_ACTIONS'] = possible_actions.at[:, 1:3].set(possible_forward_backward > 0.5)
 
     return possible_actions
 
