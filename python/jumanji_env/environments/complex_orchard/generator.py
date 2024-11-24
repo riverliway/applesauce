@@ -79,7 +79,7 @@ class ComplexOrchardGenerator:
     The final return is a flat array of the diameter of each tree.
     """
    # contretization of variables
-    tree_row_distance = jax.lax.stop_gradient(tree_row_distance)
+    tree_row_distance = jax.grad(tree_row_distance)
     print(f"tree_row_distance: {tree_row_distance}, type: {type(tree_row_distance)}")
 
 
