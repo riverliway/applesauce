@@ -79,7 +79,7 @@ class ComplexOrchardGenerator:
     The final return is a flat array of the diameter of each tree.
     """
    # contretization of variables
-    tree_row_distance = tree_row_distance[0]
+    tree_row_distance = tree_row_distance.item()
     print(f"tree_row_distance: {tree_row_distance}, type: {type(tree_row_distance)}")
 
 
