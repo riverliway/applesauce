@@ -21,6 +21,7 @@ from typing import Tuple
 import chex
 import jax
 from jax import numpy as jnp
+import numpy as np
 
 # This replaces the RandomGenerator class
 class ComplexOrchardGenerator:
