@@ -275,6 +275,9 @@ class ComplexOrchardGenerator:
 
     basket_positions, basket_diameters, basket_orientations = self.sample_baskets(tree_col_distance)
 
+    print(f"tree_positions shape: {tree_positions.shape}")
+    print(f"bot_positions shape: {bot_positions.shape}")
+    print(f"basket_positions shape: {basket_positions.shape}")
     obs_positions = jnp.concatenate([tree_positions, bot_positions, basket_positions])
     obs_diameter = jnp.concatenate([tree_diameters, bot_diameters, basket_diameters])
     apple_positions, apple_diameters, apple_held, apple_collected = self.sample_apples(apple_pos_key, tree_positions, tree_fertilities, tree_diameters, obs_positions, obs_diameter)
