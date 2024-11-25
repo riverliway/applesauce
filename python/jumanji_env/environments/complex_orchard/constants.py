@@ -23,16 +23,16 @@ NUM_ACTIONS = 7
 TICK_SPEED = 10
 
 # Trees
-TREE_DISTANCE_ROW = [220, 420]
-TREE_DISTANCE_COL = [220, 420]
-TREE_VARIATION = [-30, 30]
-TREE_DIAMETER = [40, 60]
+TREE_DISTANCE_ROW = (220, 420)
+TREE_DISTANCE_COL = (220, 420)
+TREE_VARIATION = (-30, 30)
+TREE_DIAMETER = (40, 60)
 TREE_MISSING_PROBABILITY = 0.02
 # How many apples can be on a tree
-ORCHARD_FERTILITY = [20, 50]
+ORCHARD_FERTILITY = (20, 50)
 
 # Apples
-APPLE_DIAMETER = [5, 10]
+APPLE_DIAMETER = (5, 10)
 APPLE_DENSITY = 5 # How dense the apples can be placed in the orchard. This is value defines the probability function x^APPLE_DENSITY.
 
 # Bots

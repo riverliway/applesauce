@@ -58,11 +58,24 @@ class ComplexOrchardGenerator:
 
     Returns: A random normal distribution with the given shape and bounds.
     """
+    
+#     # holding on to old code incase
+#     dist = (bounds[1] - bounds[0]) / 2
 
-    dist = (bounds[1] - bounds[0]) / 2
+#     choices = jax.random.normal(key, shape) / 6 * (bounds[1] - bounds[0]) + bounds[0]
+#     return jnp.clip(choices, bounds[0] - dist, bounds[1] + dist)
 
-    choices = jax.random.normal(key, shape) / 6 * (bounds[1] - bounds[0]) + bounds[0]
-    return jnp.clip(choices, bounds[0] - dist, bounds[1] + dist)
+    lower, upper = bounds
+    dist = (upper - lower) / 2
+
+    # Generate normal random values
+    choices = jax.random.normal(key, shape) / 6 * (upper - lower) + lower
+
+    # Concretize values (if needed outside tracing context)
+    choices = jax.device_get(choices)
+
+    # Clip values
+    return jnp.clip(choices, lower - dist, upper + dist)
 
   def sample_trees(self, key: chex.PRNGKey, tree_row_distance: float, tree_col_distance: float) -> Tuple[JaxArray['num_trees', 2], JaxArray['num_trees'], JaxArray['num_trees']]:
     """
@@ -248,7 +261,7 @@ class ComplexOrchardGenerator:
     """
 
 
-    # using numpy random normal for selecting tree row and column spacing.  Jax version was causing tracer value errors downstream
+    # unsuccessful attempts at using numpy to address tracer value error which created downstream issues
 #     tree_row_distance = np.random.normal(
 #                                         loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
 #                                         scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
@@ -258,9 +271,8 @@ class ComplexOrchardGenerator:
 #                                         loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
 #                                         scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
 #                                     )
-    #### Leaving old code here for reference. ######
-    random_row_distance = jax.device_get(self.random_normal(key, (1,), TREE_DISTANCE_ROW))
-    tree_row_distance = random_row_distance[0]
+    # original call for tree dims, creating tracer values
+    tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
     tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
 
     (
