@@ -87,8 +87,8 @@ class ComplexOrchardGenerator:
       for i_y in range(len(tree_y))
     ])
 
-    fertility = jax.random.uniform(key, (len(tree_x) * len(tree_y)))
-    diameter = self.random_normal(key, (len(tree_x) * len(tree_y)), TREE_DIAMETER)
+    fertility = jax.random.uniform(key, (len(tree_x) * len(tree_y),))
+    diameter = self.random_normal(key, (len(tree_x) * len(tree_y),), TREE_DIAMETER)
 
     return positions, fertility, diameter
 
