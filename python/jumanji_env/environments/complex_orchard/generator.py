@@ -78,10 +78,6 @@ class ComplexOrchardGenerator:
 
     The final return is a flat array of the diameter of each tree.
     """
-   # contretization of variables
-    tree_row_distance = jax.numpy.asarray(tree_row_distance).item()
-    print(f"tree_row_distance: {tree_row_distance}, type: {type(tree_row_distance)}")
-
 
     tree_x = jnp.arange(tree_row_distance, self.width - tree_row_distance, tree_row_distance / 2)
     tree_y = jnp.arange(tree_col_distance * 2, self.height - tree_col_distance / 2, tree_col_distance / 2)
@@ -250,7 +246,12 @@ class ComplexOrchardGenerator:
     Randomly creates an initial orchard state
     """
 
-    tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
+    # tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
+    # testing numpy random normal to address tracer error 
+    tree_row_distance = np.random.normal(
+                                        loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
+                                        scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
+                                    )
     tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
 
     (
