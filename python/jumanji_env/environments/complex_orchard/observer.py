@@ -9,7 +9,7 @@ import jax.numpy as jnp
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
 from jumanji_env.environments.complex_orchard.constants import NUM_ACTIONS, JaxArray
-from jumanji_env.environments.complex_orchard.utils import normalize_angles, bots_possible_moves
+from jumanji_env.environments.complex_orchard.utils import normalize_angles, bots_possible_moves, distances_between_entities
 from jumanji_env.environments.complex_orchard.orchard_types import (
     ComplexOrchardBasket,
     ComplexOrchardBot,
@@ -126,15 +126,34 @@ class BasicObserver(ComplexOrchardObserver):
     Returns: The observation for the agent. Shape: (3,)
     """
 
-    valid_apples_position: JaxArray['num_valid_apples', 2] = apples_position[(~apples_held) & (~apples_collected)]
+    is_apple_valid: JaxArray['num_apples'] = ~apples_held & ~apples_collected
 
-    def get_nearest_apple() -> JaxArray[2]:
-      # Filter out the apples that are held or collected
-      return jax.lax.cond(
-        valid_apples_position.shape[0] == 0,
-        lambda: jnp.array([0, 0], dtype=jnp.float32),
-        lambda: valid_apples_position[jnp.argmin(jnp.linalg.norm(valid_apples_position - bot_position, axis=1))]
-      )
+    def find_nearest_apple() -> JaxArray['num_bots']:
+        """
+        Finds the nearest apple to the bot's nose. Assumes that there is at least one valid apple.
+
+        :return: The id of the nearest apple. Shape: (num_bots,)
+        """
+        distances: JaxArray['num_apples'] = jnp.linalg.norm(apples_position - bot_position, axis=1)
+
+        def invalidate_distances(is_apple_valid: bool, distance: float) -> float:
+            """
+            Invalidates the distances to the apples that are not valid. Makes their distance infinity so they will never be the minimum
+
+            :param is_apple_valid: A boolean indicating if the apple is valid
+            :param distance: The distance to the apples
+
+            :return: The distance to the apples
+            """
+            return jax.lax.cond(
+                is_apple_valid,
+                lambda: distance,
+                lambda: jnp.inf
+            )
+        
+        distances: JaxArray['num_apples'] = jax.vmap(invalidate_distances, in_axes=(0, 0))(is_apple_valid, distances)
+
+        return jnp.argmin(distances, axis=0)
 
     def get_nearest_basket() -> JaxArray[2]:
       return jax.lax.cond(
@@ -146,7 +165,7 @@ class BasicObserver(ComplexOrchardObserver):
     # Determine if the targets are apples or baskets
     nearest_target_position: JaxArray[2] = jax.lax.cond(
       (bot_job == 0) & (bot_holding == -1),
-      get_nearest_apple,
+      lambda: apples_position[find_nearest_apple()],
       get_nearest_basket
     )
 
