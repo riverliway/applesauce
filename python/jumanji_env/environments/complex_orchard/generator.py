@@ -263,7 +263,7 @@ class ComplexOrchardGenerator:
     """
     Randomly creates an initial orchard state
     """
-
+    print(f"key passed into sample orchard: {key}, type: {type(key)}")
 
     # unsuccessful attempts at using numpy to address tracer value error which created downstream issues
 #     tree_row_distance = np.random.normal(
