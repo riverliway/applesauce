@@ -247,13 +247,20 @@ class ComplexOrchardGenerator:
     Randomly creates an initial orchard state
     """
 
-    # tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
-    # testing numpy random normal to address tracer error 
+
+    # using numpy random normal for selecting tree row and column spacing.  Jax version was causing tracer value errors downstream
     tree_row_distance = np.random.normal(
                                         loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
                                         scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
                                     )
-    tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
+    
+    tree_col_distance = np.random.normal(
+                                        loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
+                                        scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
+                                    )
+    #### Leaving old code here for reference. ######
+    # tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
+    # tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
 
     (
       tree_pos_key,
