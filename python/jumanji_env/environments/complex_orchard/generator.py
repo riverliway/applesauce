@@ -58,9 +58,7 @@ class ComplexOrchardGenerator:
 
     Returns: A random normal distribution with the given shape and bounds.
     """
-    print(f"bounds: {bounds}, type: {type(bounds)}")
-    print(f"shape: {shape}, type: {type(shape)}")
-    print(f"key: {key}, type: {type(key)}")
+    print(f"key passed to random_normal: {key}, type: {type(key)}")
 #     # holding on to old code incase
 #     dist = (bounds[1] - bounds[0]) / 2
 
@@ -275,6 +273,7 @@ class ComplexOrchardGenerator:
 #                                         loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
 #                                         scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
 #                                     )
+
     # original call for tree dims, creating tracer values
     tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
     tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
