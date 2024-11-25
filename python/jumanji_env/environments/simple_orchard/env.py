@@ -176,6 +176,7 @@ class SimpleOrchard(Environment[SimpleOrchardState]):
             Tuple[State, TimeStep]: `State` object corresponding to the new initial state
             of the environment and `TimeStep` object corresponding to the initial timestep.
         """
+        print(f"key passed to env.reset: {key}, type: {type(key)}")
         state = self._generator(key)
         observation = self._observer.state_to_observation(state)
         timestep = restart(observation, shape=self.num_bots)
