@@ -58,7 +58,9 @@ class ComplexOrchardGenerator:
 
     Returns: A random normal distribution with the given shape and bounds.
     """
-    
+    print(f"bounds: {bounds}, type: {type(bounds)}")
+    print(f"shape: {shape}, type: {type(shape)}")
+    print(f"key: {key}, type: {type(key)}")
 #     # holding on to old code incase
 #     dist = (bounds[1] - bounds[0]) / 2
 
@@ -73,6 +75,8 @@ class ComplexOrchardGenerator:
 
     # Concretize values (if needed outside tracing context)
     choices = jax.device_get(choices)
+    
+    print(f"choices: {choices}, traced: {isinstance(choices, jax.core.Tracer)}")
 
     # Clip values
     return jnp.clip(choices, lower - dist, upper + dist)
