@@ -163,19 +163,19 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             [
                 # !terminate !trunc
                 lambda rew, obs: transition(
-                    reward=rew, observation=obs, shape=self.num_bots
+                    reward=rew, observation=obs, shape=self.num_agents
                 ),
                 # terminate !truncate
                 lambda rew, obs: termination(
-                    reward=rew, observation=obs, shape=self.num_bots
+                    reward=rew, observation=obs, shape=self.num_agents
                 ),
                 # !terminate truncate
                 lambda rew, obs: truncation(
-                    reward=rew, observation=obs, shape=self.num_bots
+                    reward=rew, observation=obs, shape=self.num_agents
                 ),
                 # terminate truncate
                 lambda rew, obs: termination(
-                    reward=rew, observation=obs, shape=self.num_bots
+                    reward=rew, observation=obs, shape=self.num_agents
                 ),
             ],
             reward,
@@ -206,12 +206,28 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         possible_moves: JaxArray['num_bots', 2, 3] = bots_possible_moves(state)
 
         # If the bot is even capable of moving to that location
-        can_forwards = possible_moves[:, 0, 2] > 0.5
-        can_backwards = possible_moves[:, 1, 2] > 0.5
+        can_forwards: JaxArray['num_bots'] = possible_moves[:, 0, 2] > 0.5
+        can_backwards: JaxArray['num_bots'] = possible_moves[:, 1, 2] > 0.5
+
+        def update_position(should_update: bool, new_pos: JaxArray[2], current_pos: JaxArray[2]) -> JaxArray[2]:
+            """
+            Determines if the bot should update its position based on if it can move to the new position.
+
+            :param should_update: A boolean indicating if the bot should update its position
+            :param new_pos: The new position of the bot
+            :param current_pos: The current position of the bot
+            """
+
+            return jax.lax.cond(
+                should_update,
+                lambda: new_pos,
+                lambda: current_pos
+            )
 
         # Update the positions of the bots
-        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[move_forwards_mask & can_forwards].set(possible_moves[:, 0, 0:1])
-        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[move_backwards_mask & can_backwards].set(possible_moves[:, 1, 0:1])
+        updater = jax.vmap(update_position, in_axes=(0, 0, 0))
+        new_positions: JaxArray['num_bots', 2] = updater(move_forwards_mask & can_forwards, possible_moves[:, 0, 0:2], state.bots.position)
+        new_positions: JaxArray['num_bots', 2] = updater(move_backwards_mask & can_backwards, possible_moves[:, 1, 0:2], new_positions)
 
         # Check if any bots are colliding with each other because of the move
         
@@ -231,10 +247,10 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         is_intersecting_other_bots: JaxArray['num_bots'] = jnp.any(is_intersecting_other_bots & (~mask), axis=1)
 
         # If any bots are intersecting with each other, then revert their position to before moving
-        new_positions: JaxArray['num_bots', 2] = state.bots.position.at[is_intersecting_other_bots].set(state.bots.position)
+        new_positions: JaxArray['num_bots', 2] = updater(is_intersecting_other_bots, state.bots.position, new_positions)
 
         # Calculate if the bots collided or if they tried to run into something
-        did_collide = is_intersecting_other_bots | (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
+        did_collide: JaxArray['num_bots'] = is_intersecting_other_bots | (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
 
         return new_positions, did_collide
     
@@ -253,7 +269,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         :return: The new orientations of all of the bots. Shape: (num_bots,)
         """
-        return state.bots.orientation + (turn_right_mask - turn_left_mask) * ROBOT_TURN_SPEED
+        return state.bots.orientation + (turn_right_mask * 1 - turn_left_mask * 1) * ROBOT_TURN_SPEED
     
     def _perform_pick(
         self,
@@ -271,23 +287,23 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         # Perform the pickup action
         nearest_apple_id: JaxArray['num_bots'] = self._nearest_apple(state)
+        nose: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
 
-        def is_close() -> JaxArray['num_bots']:
+        def is_close_check(nearest_apple_id: int, bot_nose: JaxArray[2]) -> bool:
             """
-            Determines if each bot is close enough to their nearest apple to pick it up.
+            Determines if a bot is close enough to their nearest apple to pick it up.
+
+            :param nearest_apple_id: The id of the nearest apple to the bot
+            :param bot_nose: The position of the bot's nose
 
             :return: a boolean array indicating if the bot is close enough to pick up the apple. Shape: (num_bots,)
             """
-            nose = self._calculate_bot_nose(state.bots.position)
-            apple_position = state.apples.position[state.apples.id == nearest_apple_id]
+            apple_position: JaxArray[2] = state.apples.position[nearest_apple_id]
 
-            return jnp.linalg.norm(apple_position - nose, axis=1) <= ROBOT_INTERACTION_DISTANCE
+            return jnp.linalg.norm(apple_position - bot_nose) <= ROBOT_INTERACTION_DISTANCE
 
-        can_pick: JaxArray['num_bots'] = pick_mask & (state.bots.holding == -1) & jax.lax.cond(
-            nearest_apple_id == -1,
-            lambda: jnp.repeat(False, self.num_agents),
-            is_close
-        )
+        is_close: JaxArray['num_bots'] = (nearest_apple_id != -1) & jax.vmap(is_close_check)(nearest_apple_id, nose)
+        can_pick: JaxArray['num_bots'] = pick_mask & (state.bots.holding == -1) & is_close
         new_holding: JaxArray['num_bots'] = state.bots.holding.at[can_pick].set(nearest_apple_id[can_pick])
 
         # Create a mask for the apples that are being picked up to update their state
@@ -315,13 +331,12 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         """
 
         can_drop: JaxArray['num_bots'] = (new_holding != -1) & drop_mask
-        dropped_apple_ids = new_holding[drop_mask]
 
         def update_apple_position(
             id: int,
             current_position: JaxArray[2],
-            new_positions: JaxArray['num_dropped_apples', 2],
-            dropped_apple_ids: JaxArray['num_dropped_apples']
+            new_positions: JaxArray['num_bots', 2],
+            new_holding: JaxArray['num_bots']
         ) -> JaxArray[2]:
             """
             Gets either the new position or the old position of the apple based on if it was dropped.
@@ -335,14 +350,14 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             """
 
             return jax.lax.cond(
-                jnp.any(dropped_apple_ids == id),
-                lambda: new_positions[jnp.argmax(dropped_apple_ids == id)],
+                jnp.any(new_holding == id),
+                lambda: new_positions[jnp.argmax(new_holding == id)],
                 lambda: current_position
             )
 
         # Update the new apple positions after being dropped
         bot_nose_position: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
-        new_apple_position: JaxArray['num_apples', 2] = jax.vmap(update_apple_position, in_axes=(0, 0, None, None))(state.apples.id, state.apples.position, bot_nose_position[can_drop], dropped_apple_ids)
+        new_apple_position: JaxArray['num_apples', 2] = jax.vmap(update_apple_position, in_axes=(0, 0, None, None))(state.apples.id, state.apples.position, bot_nose_position, new_holding)
 
         # These entities are not added to the state because they're just used for checking if the apple was deposited in a basket
         interaction_check_entities = jax.vmap(ComplexOrchardEntity)(
@@ -352,11 +367,13 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         )
 
         is_near_basket: JaxArray['num_bots'] = are_any_intersecting(interaction_check_entities, state.baskets)
-        dropped_are_collected: JaxArray['num_apples'] = jax.vmap(lambda apple_id, collected_ids: jnp.any(apple_id == collected_ids), in_axes=(0, None))(state.apples.id, dropped_apple_ids[is_near_basket[can_drop]])
+        dropped_are_collected: JaxArray['num_apples'] = jax.vmap(lambda apple_id, collected_ids: jnp.any(apple_id == collected_ids), in_axes=(0, None))(state.apples.id, new_holding[is_near_basket[can_drop]])
         new_collected: JaxArray['num_apples'] = state.apples.collected | dropped_are_collected
 
         new_holding: JaxArray['num_bots'] = new_holding.at[can_drop].set(-1)
-        new_held: JaxArray['num_apples'] = new_held.at[can_drop].set(False)
+
+        update_held: JaxArray['num_apples'] = jax.vmap(lambda id, held: jnp.any(id == held), in_axes=(0, None))(state.apples.id, new_holding)
+        new_held: JaxArray['num_apples'] = new_held.at[update_held].set(False)
 
         return new_holding, new_held, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop
 

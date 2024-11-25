@@ -21,9 +21,7 @@ from typing import Tuple
 import chex
 import jax
 from jax import numpy as jnp
-import numpy as np
 
-# This replaces the RandomGenerator class
 class ComplexOrchardGenerator:
   """
   Randomly generates complex orchard states in a reproduceable manner using JAX natives.
@@ -47,7 +45,7 @@ class ComplexOrchardGenerator:
     self.num_baskets = num_baskets
 
   @staticmethod
-  def random_normal(key: chex.PRNGKey, shape: Tuple[int], bounds: Tuple[float, float]) -> JaxArray['...shape']:
+  def random_normal(key: chex.PRNGKey, shape: Tuple[int], bounds: Tuple[float, float]) -> JaxArray['shape']:
     """
     Generates a random normal distribution with the given shape and a bound defining 99% of the values.
 
@@ -58,26 +56,10 @@ class ComplexOrchardGenerator:
 
     Returns: A random normal distribution with the given shape and bounds.
     """
-    print(f"key passed to random_normal: {key}, type: {type(key)}")
-#     # holding on to old code incase
-#     dist = (bounds[1] - bounds[0]) / 2
+    dist = (bounds[1] - bounds[0]) / 2
 
-#     choices = jax.random.normal(key, shape) / 6 * (bounds[1] - bounds[0]) + bounds[0]
-#     return jnp.clip(choices, bounds[0] - dist, bounds[1] + dist)
-
-    lower, upper = bounds
-    dist = (upper - lower) / 2
-
-    # Generate normal random values
-    choices = jax.random.normal(key, shape) / 6 * (upper - lower) + lower
-
-    # Concretize values (if needed outside tracing context)
-    choices = jax.device_get(choices)
-    
-    print(f"choices: {choices}, traced: {isinstance(choices, jax.core.Tracer)}")
-
-    # Clip values
-    return jnp.clip(choices, lower - dist, upper + dist)
+    choices = jax.random.normal(key, shape) / 6 * (bounds[1] - bounds[0]) + bounds[0]
+    return jnp.clip(choices, bounds[0] - dist, bounds[1] + dist)
 
   def sample_trees(self, key: chex.PRNGKey, tree_row_distance: float, tree_col_distance: float) -> Tuple[JaxArray['num_trees', 2], JaxArray['num_trees'], JaxArray['num_trees']]:
     """
@@ -110,7 +92,6 @@ class ComplexOrchardGenerator:
 
     return positions, fertility, diameter
 
-  # This replaces `sample_food` method.
   def sample_apples(
     self,
     key: chex.PRNGKey,
@@ -137,15 +118,19 @@ class ComplexOrchardGenerator:
     - An array containing if the apple is being held.
     """
     
-    num_trees = len(tree_diameter)
+    num_trees: int = len(tree_diameter)
 
-    theta_offsets = jax.random.uniform(key, (num_trees), maxval=2 * jnp.pi)
-    num_apples = jnp.floor(jax.nn.relu(self.random_normal(key, (num_trees), ORCHARD_FERTILITY) * tree_fertility)).astype(jnp.int32)
-    max_num_apples = jnp.max(num_apples)
+    theta_offsets: JaxArray['num_trees'] = jax.random.uniform(key, (num_trees), maxval=2 * jnp.pi)
 
-    max_apple_size = APPLE_DIAMETER[1] * 2
+    # We used to generate a random number of apples per tree, but now we always generate the same number of apples
+    # num_apples = jnp.floor(jax.nn.relu(self.random_normal(key, (num_trees), ORCHARD_FERTILITY) * tree_fertility)).astype(jnp.int32)
+    # max_num_apples = jnp.max(num_apples)
 
-    def create_apples(theta: float, num_apples: int, tree_pos: JaxArray[2], tree_diameter: float) -> JaxArray['max_num_apples', 2]:
+    num_apples_per_tree: int = (ORCHARD_FERTILITY[0] + ORCHARD_FERTILITY[1]) // 2
+
+    max_apple_size: int = APPLE_DIAMETER[1] * 2
+
+    def create_apples(theta: float, tree_pos: JaxArray[2], tree_diameter: float) -> JaxArray['num_apples_per_tree', 2]:
       """
       This is a function that generates the apple positions for a single tree.
       It will get vmaped over to generate the apple positions for all trees.
@@ -158,48 +143,49 @@ class ComplexOrchardGenerator:
       Returns: an array of the apple positions
       """
 
-      # We always generate the maximum number of apples and then set the positions of the unused apples to be out of bounds
-      # because we can't have a variable number of apples in the array (jax requires fixed size arrays)
-      thetas = jnp.linspace(0, 2 * jnp.pi, max_num_apples, endpoint=False) + theta
-      thetas += jax.random.uniform(key, (max_num_apples,), maxval=0.1)
+      # We always generate the same number of apples per tree and in a tight ring around the tree
+      # because we can't afford to do obstacle checking for every apple since that would result in a variable number of apples
+      thetas = jnp.linspace(0, 2 * jnp.pi, num_apples_per_tree, endpoint=False) + theta
+      thetas += jax.random.uniform(key, (num_apples_per_tree,), maxval=0.1)
 
-      radii = jax.random.uniform(key, (max_num_apples,))
-      radii = 1 / jnp.pow(radii, APPLE_DENSITY) + tree_diameter + max_apple_size
+      radii = jax.random.uniform(key, (num_apples_per_tree,))
+      radii = radii * tree_diameter * 3 + tree_diameter + max_apple_size
 
       apple_x = radii * jnp.cos(thetas) + tree_pos[0]
       apple_y = radii * jnp.sin(thetas) + tree_pos[1]
 
-      apple_x = jnp.where(jnp.arange(max_num_apples) < num_apples, apple_x, -1)
-      apple_y = jnp.where(jnp.arange(max_num_apples) < num_apples, apple_y, -1)
+      # apple_x = jnp.where(jnp.arange(num_apples_per_tree) < num_apples, apple_x, -1)
+      # apple_y = jnp.where(jnp.arange(num_apples_per_tree) < num_apples, apple_y, -1)
 
       return jnp.ravel(jnp.stack([apple_x, apple_y], axis=1))
     
-    apple_positions = jax.vmap(create_apples)(theta_offsets, num_apples, tree_positions, tree_diameter)
+    apple_positions: JaxArray['num_apples', 2] = jax.vmap(create_apples)(theta_offsets, tree_positions, tree_diameter)
     apple_positions = jnp.ravel(apple_positions)
 
-    # Filter out the out of bounds apples
     apple_x = apple_positions[::2]
     apple_y = apple_positions[1::2]
 
-    def check_in_obstacle(apple_x: float, apple_y: float, obs_x: JaxArray['num_obs'], obs_y: JaxArray['num_obs'], obs_diameter: JaxArray['num_obs']) -> bool:
-      """
-      This function checks if an apple is in any of the obstacles.
+    # We're not checking if the apples are in the obstacles anymore because it can result in a variable number of apples
 
-      :param apple_x: The x position of the apple
-      :param apple_y: The y position of the apple
-      :param obs_x: The x positions of the obstacles
-      :param obs_y: The y positions of the obstacles
-      :param obs_diameter: The diameter of the obstacles
+    # def check_in_obstacle(apple_x: float, apple_y: float, obs_x: JaxArray['num_obs'], obs_y: JaxArray['num_obs'], obs_diameter: JaxArray['num_obs']) -> bool:
+    #   """
+    #   This function checks if an apple is in any of the obstacles.
 
-      Returns: True if the apple is in a valid location, False otherwise
-      """
+    #   :param apple_x: The x position of the apple
+    #   :param apple_y: The y position of the apple
+    #   :param obs_x: The x positions of the obstacles
+    #   :param obs_y: The y positions of the obstacles
+    #   :param obs_diameter: The diameter of the obstacles
 
-      return jnp.any(jnp.hypot(apple_x - obs_x, apple_y - obs_y) > obs_diameter + max_apple_size * 2)
+    #   Returns: True if the apple is in a valid location, False otherwise
+    #   """
 
-    not_in_obstacle = jax.vmap(check_in_obstacle, in_axes=(0, 0, None, None, None))(apple_x, apple_y, obs_positions[:, 0], obs_positions[:, 1], obs_diameter)
-    in_bounds = (apple_x > max_apple_size) & (apple_y > max_apple_size) & (apple_x < self.width - max_apple_size) & (apple_y < self.height - max_apple_size) & not_in_obstacle
-    apple_x = apple_x[in_bounds]
-    apple_y = apple_y[in_bounds]
+    #   return jnp.any(jnp.hypot(apple_x - obs_x, apple_y - obs_y) > obs_diameter + max_apple_size * 2)
+
+    # not_in_obstacle = jax.vmap(check_in_obstacle, in_axes=(0, 0, None, None, None))(apple_x, apple_y, obs_positions[:, 0], obs_positions[:, 1], obs_diameter)
+    # in_bounds = (apple_x > max_apple_size) & (apple_y > max_apple_size) & (apple_x < self.width - max_apple_size) & (apple_y < self.height - max_apple_size) & not_in_obstacle
+    # apple_x = apple_x[in_bounds]
+    # apple_y = apple_y[in_bounds]
 
     apple_positions = jnp.stack([apple_x, apple_y], axis=1)
 
@@ -261,22 +247,8 @@ class ComplexOrchardGenerator:
     """
     Randomly creates an initial orchard state
     """
-    print(f"key passed into sample orchard: {key}, type: {type(key)}")
-
-    # unsuccessful attempts at using numpy to address tracer value error which created downstream issues
-#     tree_row_distance = np.random.normal(
-#                                         loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
-#                                         scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
-#                                     )
-    
-#     tree_col_distance = np.random.normal(
-#                                         loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
-#                                         scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
-#                                     )
-
-    # original call for tree dims, creating tracer values
-    tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
-    tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
+    tree_row_distance = (TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) // 2
+    tree_col_distance = (TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) // 2
 
     (
       tree_pos_key,
@@ -291,9 +263,6 @@ class ComplexOrchardGenerator:
 
     basket_positions, basket_diameters, basket_orientations = self.sample_baskets(tree_col_distance)
 
-    print(f"tree_positions shape: {tree_positions.shape}")
-    print(f"bot_positions shape: {bot_positions.shape}")
-    print(f"basket_positions shape: {basket_positions.shape}")
     obs_positions = jnp.concatenate([tree_positions, bot_positions, basket_positions])
     obs_diameter = jnp.concatenate([tree_diameters, bot_diameters, basket_diameters])
     apple_positions, apple_diameters, apple_held, apple_collected = self.sample_apples(apple_pos_key, tree_positions, tree_fertilities, tree_diameters, obs_positions, obs_diameter)
