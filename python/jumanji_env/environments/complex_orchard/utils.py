@@ -92,7 +92,7 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
   # These entities are not added to the state because they're just used for calculations
   new_bots = jax.vmap(ComplexOrchardEntity)(
     id=jnp.arange(num_bots * 2),
-    position=new_positions[:, :, 0:2].reshape((4 * 2, 2)),
+    position=new_positions[:, :, 0:2].reshape((num_bots * 2, 2)),
     diameter=jnp.repeat(state.bots.diameter, 2),
   )
 

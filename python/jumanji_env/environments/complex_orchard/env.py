@@ -99,7 +99,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         print(f"key passed to env.reset: {key}, type: {type(key)}")
         state = self._generator(key)
         observation = self._observer.state_to_observation(state)
-        timestep = restart(observation, shape=self.num_bots)
+        timestep = restart(observation, shape=self.num_agents)
         timestep.extras = self._get_extra_info(state, timestep)
 
         return state, timestep
