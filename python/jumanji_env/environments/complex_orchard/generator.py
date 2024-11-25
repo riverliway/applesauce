@@ -90,8 +90,8 @@ class ComplexOrchardGenerator:
       for i_y in range(len(tree_y))
     ])
 
-    fertility = jax.random.uniform(key, (len(tree_x) * len(tree_y),))
-    diameter = self.random_normal(key, (len(tree_x) * len(tree_y),), TREE_DIAMETER)
+    fertility = jax.random.uniform(key, (len(tree_x) * len(tree_y)))
+    diameter = self.random_normal(key, (len(tree_x) * len(tree_y)), TREE_DIAMETER)
 
     return positions, fertility, diameter
 
@@ -249,18 +249,19 @@ class ComplexOrchardGenerator:
 
 
     # using numpy random normal for selecting tree row and column spacing.  Jax version was causing tracer value errors downstream
-    tree_row_distance = np.random.normal(
-                                        loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
-                                        scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
-                                    )
+#     tree_row_distance = np.random.normal(
+#                                         loc=(TREE_DISTANCE_ROW[0] + TREE_DISTANCE_ROW[1]) / 2,
+#                                         scale=(TREE_DISTANCE_ROW[1] - TREE_DISTANCE_ROW[0]) / 6,
+#                                     )
     
-    tree_col_distance = np.random.normal(
-                                        loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
-                                        scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
-                                    )
+#     tree_col_distance = np.random.normal(
+#                                         loc=(TREE_DISTANCE_COL[0] + TREE_DISTANCE_COL[1]) / 2,
+#                                         scale=(TREE_DISTANCE_COL[1] - TREE_DISTANCE_COL[0]) / 6,
+#                                     )
     #### Leaving old code here for reference. ######
-    # tree_row_distance = self.random_normal(key, (1,), TREE_DISTANCE_ROW)[0]
-    # tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
+    random_row_distance = jax.device_get(self.random_normal(key, (1,), TREE_DISTANCE_ROW))
+    tree_row_distance = random_row_distance[0]
+    tree_col_distance = self.random_normal(key, (1,), TREE_DISTANCE_COL)[0]
 
     (
       tree_pos_key,
