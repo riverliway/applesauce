@@ -12,7 +12,6 @@ from jumanji_env.environments.complex_orchard.constants import (
     ROBOT_DIAMETER,
     BASKET_DIAMETER,
     APPLE_DIAMETER,
-    APPLE_DENSITY,
     JaxArray
 )
 
@@ -96,10 +95,7 @@ class ComplexOrchardGenerator:
     self,
     key: chex.PRNGKey,
     tree_positions: JaxArray['num_trees', 2],
-    tree_fertility: JaxArray['num_trees'],
-    tree_diameter: JaxArray['num_trees'],
-    obs_positions: JaxArray['num_obs', 2],
-    obs_diameter: JaxArray['num_obs']
+    tree_diameter: JaxArray['num_trees']
   ) -> Tuple[JaxArray['num_apples', 2], JaxArray['num_apples'], JaxArray['num_apples'], JaxArray['num_apples']]:
     """
     Randomly place apples on the grid.
@@ -120,7 +116,7 @@ class ComplexOrchardGenerator:
     
     num_trees: int = len(tree_diameter)
 
-    theta_offsets: JaxArray['num_trees'] = jax.random.uniform(key, (num_trees), maxval=2 * jnp.pi)
+    theta_offsets: JaxArray['num_trees'] = jax.random.uniform(key, (num_trees,), maxval=2 * jnp.pi)
 
     # We used to generate a random number of apples per tree, but now we always generate the same number of apples
     # num_apples = jnp.floor(jax.nn.relu(self.random_normal(key, (num_trees), ORCHARD_FERTILITY) * tree_fertility)).astype(jnp.int32)
