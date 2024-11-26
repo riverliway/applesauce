@@ -259,9 +259,9 @@ class ComplexOrchardGenerator:
 
     basket_positions, basket_diameters, basket_orientations = self.sample_baskets(tree_col_distance)
 
-    obs_positions = jnp.concatenate([tree_positions, bot_positions, basket_positions])
-    obs_diameter = jnp.concatenate([tree_diameters, bot_diameters, basket_diameters])
-    apple_positions, apple_diameters, apple_held, apple_collected = self.sample_apples(apple_pos_key, tree_positions, tree_fertilities, tree_diameters, obs_positions, obs_diameter)
+    # obs_positions = jnp.concatenate([tree_positions, bot_positions, basket_positions])
+    # obs_diameter = jnp.concatenate([tree_diameters, bot_diameters, basket_diameters])
+    apple_positions, apple_diameters, apple_held, apple_collected = self.sample_apples(apple_pos_key, tree_positions, tree_diameters)
 
     # Create a pytree of generic entitys for the trees
     # The ID is just its position in the generated array
