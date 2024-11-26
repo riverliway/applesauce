@@ -109,7 +109,7 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
   # Check if the bot is within the bounds
   is_within_bounds: JaxArray['num_bots', 2] = (new_x >= 0) & (new_y <= state.width) & (new_x >= 0) & (new_y <= state.height)
   is_intersecting: JaxArray['num_bots * 2'] = is_intersecting_trees | is_intersecting_baskets | is_intersecting_other_bots
-  is_possible: JaxArray['num_bots', 2] = (~is_intersecting.reshape((num_bots,), 2)) & is_within_bounds
+  is_possible: JaxArray['num_bots', 2] = (~is_intersecting.reshape(num_bots, 2)) & is_within_bounds
 
   new_positions: JaxArray['num_bots', 2, 3] = new_positions.at[:, :, 2].set(is_possible)
 
