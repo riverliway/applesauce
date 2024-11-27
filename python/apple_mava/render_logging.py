@@ -117,7 +117,7 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
         action_types = ("NOOP", "UP", "DOWN", "LEFT", "RIGHT", "LOAD")
         print("="*70)
         apple_locations = state.env_state.apples.position.tolist()
-        print("Number of Apples:", len(apple_locations)
+        print("Number of Apples:", len(apple_locations))
         print("Apple locations:", apple_locations)
         print("="*70)
     
