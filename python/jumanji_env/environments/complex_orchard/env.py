@@ -24,7 +24,8 @@ from jumanji_env.environments.complex_orchard.constants import (
   REWARD_OUT_OF_BOUNDS,
   REWARD_BAD_PICK,
   REWARD_BAD_DROP,
-  REWARD_COLLECT_APPLE
+  REWARD_COLLECT_APPLE,
+  REWARD_COST_OF_STEP
 )
 from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
 from jumanji_env.environments.complex_orchard.observer import BasicObserver
@@ -521,8 +522,9 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         :param did_try_bad_drop: A boolean for each bot indicating if they dropped an apple but not in a basket
         :param did_collect_apple: A boolean for each bot indicating if they successfully collected an apple
         """
-
-        reward = did_collide * REWARD_OUT_OF_BOUNDS
+        
+        reward = REWARD_COST_OF_STEP
+        reward += did_collide * REWARD_OUT_OF_BOUNDS
         reward += did_try_bad_pick * REWARD_BAD_PICK
         reward += did_try_bad_drop * REWARD_BAD_DROP
         reward += did_collect_apple * REWARD_COLLECT_APPLE

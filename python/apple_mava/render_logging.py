@@ -213,10 +213,10 @@ def create_complex_dict(state, seed) -> dict:
         "collected": collected
     }
     for position, diameter, held, collected in zip(
-        state.env_state.baskets.position.tolist(),
-        state.env_state.baskets.diameter.tolist(),
-        state.env_state.baskets.held.tolist(),
-        state.env_state.baskets.collected.tolist()
+        state.env_state.apples.position.tolist(),
+        state.env_state.apples.diameter.tolist(),
+        state.env_state.apples.held.tolist(),
+        state.env_state.apples.collected.tolist()
     )]
 
     return {
