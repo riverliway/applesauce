@@ -1,6 +1,10 @@
 import time  # For timing the execution in plot_performance
 import numpy as np  # For numerical operations
 import matplotlib.pyplot as plt  # For plotting the performance
+from matplotlib.animation import FuncAnimation
+import imageio
+import os
+
 from IPython.display import clear_output  # For updating the plot dynamically
 import jax  # For JAX utilities
 import jax.numpy as jnp  # For JAX-based numerical operations
@@ -250,3 +254,106 @@ def plot_performance(mean_episode_return, ep_returns, start_time):
     # Show the plot
     plt.show()
     return ep_returns
+
+def visualize_environment(data):
+    # Create a plot
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_xlim(0, data['width'])
+    ax.set_ylim(0, data['height'])
+    ax.set_aspect('equal', adjustable='box')
+
+    # Plot bots
+    for bot in data['bots']:
+        bot_circle = plt.Circle((bot['x'], bot['y']), bot['diameter'] / 2, color='blue', alpha=0.6, label='Bot')
+        ax.add_patch(bot_circle)
+    
+    # Plot trees
+    for tree in data['trees']:
+        tree_circle = plt.Circle((tree['x'], tree['y']), tree['diameter'] / 2, color='green', alpha=0.6, label='Tree')
+        ax.add_patch(tree_circle)
+    
+    # Plot baskets
+    for basket in data['baskets']:
+        basket_circle = plt.Circle((basket['x'], basket['y']), basket['diameter'] / 2, color='orange', alpha=0.6, label='Basket')
+        ax.add_patch(basket_circle)
+    
+    # Plot apples
+    for apple in data['apples']:
+        color = 'red' if apple['collected'] else 'yellow' if apple['held'] else 'brown'
+        apple_circle = plt.Circle((apple['x'], apple['y']), apple['diameter'] / 2, color=color, alpha=0.6, label='Apple')
+        ax.add_patch(apple_circle)
+
+    # Avoid duplicate labels
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys(), loc="upper right")
+    
+    # Set titles and labels
+    ax.set_title("Environment Visualization")
+    ax.set_xlabel("Width")
+    ax.set_ylabel("Height")
+    
+    # Display the plot
+    plt.gca().invert_yaxis()
+    plt.show()
+    
+# Visualization function for a single step
+def visualize_step(data, step_index, save_path):
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_xlim(0, data['width'])
+    ax.set_ylim(0, data['height'])
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_title(f"Environment Step {step_index}")
+    ax.set_xlabel("Width")
+    ax.set_ylabel("Height")
+
+    # Plot bots
+    for bot in data['bots']:
+        bot_circle = plt.Circle((bot['x'], bot['y']), bot['diameter'] / 2, color='blue', alpha=0.6, label='Bot')
+        ax.add_patch(bot_circle)
+    
+    # Plot trees
+    for tree in data['trees']:
+        tree_circle = plt.Circle((tree['x'], tree['y']), tree['diameter'] / 2, color='green', alpha=0.6, label='Tree')
+        ax.add_patch(tree_circle)
+    
+    # Plot baskets
+    for basket in data['baskets']:
+        basket_circle = plt.Circle((basket['x'], basket['y']), basket['diameter'] / 2, color='orange', alpha=0.6, label='Basket')
+        ax.add_patch(basket_circle)
+    
+    # Plot apples
+    for apple in data['apples']:
+        color = 'red' if apple['collected'] else 'yellow' if apple['held'] else 'brown'
+        apple_circle = plt.Circle((apple['x'], apple['y']), apple['diameter'] / 2, color=color, alpha=0.6, label='Apple')
+        ax.add_patch(apple_circle)
+
+    # Avoid duplicate labels
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys(), loc="upper right")
+
+    plt.gca().invert_yaxis()
+    plt.savefig(save_path)
+    plt.close(fig)
+
+# Function to generate .gif from a list of dictionaries
+def generate_gif(data_list, output_gif_path, temp_dir="temp_frames"):
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    frame_paths = []
+    for i, step_data in enumerate(data_list):
+        frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
+        visualize_step(step_data, i, frame_path)
+        frame_paths.append(frame_path)
+    
+    # Combine frames into a gif
+    with imageio.get_writer(output_gif_path, mode='I', duration=0.2) as writer:
+        for frame_path in frame_paths:
+            image = imageio.imread(frame_path)
+            writer.append_data(image)
+    
+    # Clean up temporary frame files
+    for frame_path in frame_paths:
+        os.remove(frame_path)
+    os.rmdir(temp_dir)
