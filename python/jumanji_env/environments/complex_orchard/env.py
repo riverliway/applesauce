@@ -123,7 +123,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple = self._perform_drop(state, new_holding, new_held, actions == DROP)
         
         # Calculate the reward for each bot
-        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_collect_apple)
+        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple)
 
         # Update the state
         new_bots = jax.vmap(ComplexOrchardBot)(
