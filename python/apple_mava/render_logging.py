@@ -116,7 +116,9 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
     if verbose:
         action_types = ("NOOP", "UP", "DOWN", "LEFT", "RIGHT", "LOAD")
         print("="*70)
-        print("Apple locations:", state.env_state.apples.position.tolist())
+        apple_locations = state.env_state.apples.position.tolist()
+        print("Number of Apples:", len(apple_locations)
+        print("Apple locations:", apple_locations)
         print("="*70)
     
     states = [state]
@@ -155,8 +157,7 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
 
     state_dicts = []
     for state in states:
-      env_state = state.env_state
-      record = create_complex_dict(env_state, config.system.seed)
+      record = create_complex_dict(state, config.system.seed)
       state_dicts.append(record)
     # Render the episode
     ##### Commenting out the rendering and returning the states. 
