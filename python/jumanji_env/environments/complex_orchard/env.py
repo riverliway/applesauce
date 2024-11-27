@@ -500,12 +500,20 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
     def _get_extra_info(self, state: ComplexOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
-        n_eaten = state.apples.collected.sum() + timestep.extras.get(
-            "eaten_food", jnp.float32(0)
+        
+        n_picked = state.apples.held.sum() + timestep.extras.get(
+            "picked_food", jnp.float32(0)
         )
-
-        percent_eaten = (n_eaten / len(state.apples.id)) * 100
-        return {"percent_eaten": percent_eaten}
+        
+        n_collected = state.apples.collected.sum() + timestep.extras.get(
+            "collected_food", jnp.float32(0)
+        )
+        
+        percent_picked = (n_picked / len(state.apples.id)) * 100
+        percent_collected = (n_collected / len(state.apples.id)) * 100
+        
+        return {"percent_collected": percent_collected,
+               "percent_picked": percent_picked}
 
     def get_reward(
         self,
