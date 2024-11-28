@@ -148,8 +148,8 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
             print("Bot Location After:", state.env_state.bots.position.tolist())
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
-            print("Apples Picked:", sum(timestep.extras["percent_picked"]))
-            print("Apples Collected:", sum(state.env_state.apples.collected.tolist()))
+            print("Apples Picked:", timestep.extras["percent_picked"])
+            print("Apples Collected:", timestep.extras["percent_picked"])
             print("-"*70)
 
     # Print out the results of the episode
