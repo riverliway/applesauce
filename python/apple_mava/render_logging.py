@@ -148,8 +148,8 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
             print("Bot Location After:", state.env_state.bots.position.tolist())
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
-            print("Apples Picked:", timestep.extras["percent_picked"])
-            print("Apples Collected:", timestep.extras["percent_picked"])
+            print("Apples Picked:", state.env_state.bots.holding.tolist())
+            print("Apples Collected:", state.env_state.apples.collected.tolist())
             print("-"*70)
 
     # Print out the results of the episode
@@ -282,7 +282,7 @@ def visualize_environment(data):
     
     # Plot apples
     for apple in data['apples']:
-        color = 'red' if apple['collected'] else 'yellow' if apple['held'] else 'brown'
+        color = 'fushsia' if apple['collected'] else 'gold' if apple['held'] else 'red'
         apple_circle = plt.Circle((apple['x'], apple['y']), apple['diameter'] / 2, color=color, alpha=0.6, label='Apple')
         ax.add_patch(apple_circle)
 
