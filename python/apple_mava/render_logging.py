@@ -236,7 +236,7 @@ def create_complex_dict(state, seed) -> dict:
         "TICK_SPEED": TICK_SPEED
     }
 
-def plot_performance(mean_episode_return, ep_returns, start_time):
+def plot_performance(mean_episode_return, ep_returns, start_time, config):
     """visualises the performance of the algorithm. This plot will be refreshed each time evaluation interval happens."""
     
     plt.figure(figsize=(8, 4))
@@ -249,7 +249,10 @@ def plot_performance(mean_episode_return, ep_returns, start_time):
     )
     plt.xlabel("Run Time [Minutes]")
     plt.ylabel("Episode Return")
-    plt.title("Apple Orchard with {x} Agents")
+    width = config["env"]["scenario"]["task_config"]["width"]
+    height = config["env"]["scenario"]["task_config"]["height"]
+    pickers = config["env"]["scenario"]["task_config"]["num_picker_bots"]
+    plt.title(f"{width}x{height} Apple Orchard with {pickers} Agents")
 
     # Show the plot
     plt.show()
