@@ -26,7 +26,8 @@ from jumanji_env.environments.complex_orchard.constants import (
   REWARD_BAD_DROP,
   REWARD_COLLECT_APPLE,
   REWARD_COST_OF_STEP,
-  REWARD_PICK_APPLE
+  REWARD_PICK_APPLE,
+  REWARD_DROPPED_APPLE
 )
 from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
 from jumanji_env.environments.complex_orchard.observer import BasicObserver
@@ -120,7 +121,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         new_bot_positions, did_collide = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
         new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
         new_holding, new_held, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
-        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple = self._perform_drop(state, new_holding, new_held, actions == DROP)
+        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
         
         # Calculate the reward for each bot
         reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple)
@@ -405,7 +406,10 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         )
 
         is_near_basket: JaxArray['num_bots'] = are_any_intersecting(interaction_check_entities, state.baskets)
-
+        
+        # Determine if a bad drop occurred
+        bad_apple_drop: JaxArray['num_bots'] = can_drop & ~is_near_basket
+    
         def update_collected(id: int, collected: bool, apple_ids_dropped_near_baskets: JaxArray['num_bots']) -> bool:
             """
             Update the collected state of the apples based on if they were dropped.
@@ -443,7 +447,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, 0, None))(state.apples.id, new_held, new_holding)
 
-        return new_holding, new_held, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop
+        return new_holding, new_held, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop, bad_apple_drop
 
     def _nearest_apple(self, state: ComplexOrchardState) -> JaxArray['num_bots']:
         """
@@ -507,6 +511,10 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
     def _get_extra_info(self, state: ComplexOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
         
+        # Debug: Print current apple states
+        print("state.apples.held:", state.apples.held)
+        print("state.apples.collected:", state.apples.collected)
+    
         n_picked = state.apples.held.sum() + timestep.extras.get(
             "picked_food", jnp.float32(0)
         )
@@ -543,6 +551,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         reward += did_try_bad_pick * REWARD_BAD_PICK
         reward += did_try_bad_drop * REWARD_BAD_DROP
         reward += did_pick_apple * REWARD_PICK_APPLE
+        reward += bad_apple_drop * REWARD_DROPPED_APPLE
         reward += did_collect_apple * REWARD_COLLECT_APPLE
 
         return reward
