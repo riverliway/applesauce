@@ -85,8 +85,8 @@ class ComplexOrchardGenerator:
     start_y = (self.height - (num_trees_y - 1) * tree_row_distance) / 2
 
     # Create the positions
-    tree_x = jnp.arange(start_x+150, start_x + num_trees_x * tree_row_distance, tree_row_distance)
-    tree_y = jnp.arange(start_y+150, start_y + num_trees_y * tree_row_distance, tree_row_distance)
+    tree_x = jnp.arange(start_x, start_x + num_trees_x * tree_row_distance, tree_row_distance)
+    tree_y = jnp.arange(start_y+100, start_y + num_trees_y * tree_row_distance, tree_row_distance)
     
     position_offset = self.random_normal(key, (len(tree_x), len(tree_y), 2), TREE_VARIATION)
 
