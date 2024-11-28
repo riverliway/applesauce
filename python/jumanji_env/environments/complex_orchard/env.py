@@ -511,8 +511,8 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
     def _get_extra_info(self, state: ComplexOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
     
-        n_picked = state.env_state.apples.held.sum()         
-        n_collected = state.env_state.apples.collected.sum()
+        n_picked = state.apples.held.sum()         
+        n_collected = state.apples.collected.sum()
         
         percent_collected = (n_collected / len(state.apples.id)) * 100
         
