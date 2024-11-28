@@ -121,10 +121,10 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         new_bot_positions, did_collide = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
         new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
         new_holding, new_held, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
-        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
+        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
         
         # Calculate the reward for each bot
-        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple)
+        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop)
 
         # Update the state
         new_bots = jax.vmap(ComplexOrchardBot)(
@@ -535,7 +535,8 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         did_try_bad_pick: JaxArray['num_bots'],
         did_try_bad_drop: JaxArray['num_bots'],
         did_pick_apple: JaxArray['num_bots'],
-        did_collect_apple: JaxArray['num_bots']
+        did_collect_apple: JaxArray['num_bots'],
+        did_bad_apple_drop: JaxArray['num_bots']
     ) -> JaxArray['num_bots']:
         """
         Calculates the reward for each bot
@@ -544,6 +545,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         :param did_try_bad_pick: A boolean for each bot indicating if they tried to pick up an apple but failed
         :param did_try_bad_drop: A boolean for each bot indicating if they dropped an apple but not in a basket
         :param did_collect_apple: A boolean for each bot indicating if they successfully collected an apple
+        :param did_bad_apple_drop: A boolean for each bot indicating if had an apple and then dropped it somewhere other than the basket
         """
         
         reward = REWARD_COST_OF_STEP
@@ -551,7 +553,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         reward += did_try_bad_pick * REWARD_BAD_PICK
         reward += did_try_bad_drop * REWARD_BAD_DROP
         reward += did_pick_apple * REWARD_PICK_APPLE
-        reward += bad_apple_drop * REWARD_DROPPED_APPLE
+        reward += did_bad_apple_drop * REWARD_DROPPED_APPLE
         reward += did_collect_apple * REWARD_COLLECT_APPLE
 
         return reward
