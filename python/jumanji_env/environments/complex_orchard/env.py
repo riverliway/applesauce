@@ -510,10 +510,6 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
     def _get_extra_info(self, state: ComplexOrchardState, timestep: TimeStep) -> Dict:
         """Computes extras metrics to be returned within the timestep."""
-        
-        # Debug: Print current apple states
-        print("state.apples.held:", state.apples.held)
-        print("state.apples.collected:", state.apples.collected)
     
         n_picked = state.apples.held.sum() + timestep.extras.get(
             "picked_food", jnp.float32(0)

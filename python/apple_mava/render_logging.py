@@ -148,7 +148,7 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
             print("Bot Location After:", state.env_state.bots.position.tolist())
             print("Reward:", jnp.mean(timestep.reward))
             print("Accumulative Reward:", episode_return)
-            print("Apples Picked:", sum(state.env_state.apples.held.tolist()))
+            print("Apples Picked:", sum(timestep.extras["percent_picked"]))
             print("Apples Collected:", sum(state.env_state.apples.collected.tolist()))
             print("-"*70)
 
@@ -314,6 +314,18 @@ def visualize_step(data, step_index, save_path):
     for bot in data['bots']:
         bot_circle = plt.Circle((bot['x'], bot['y']), bot['diameter'] / 2, color='blue', alpha=0.6, label='Bot')
         ax.add_patch(bot_circle)
+        
+        # Calculate and draw the nose
+        nose_x = bot['x'] + (bot['diameter'] / 2) * jnp.cos(bot['orientation'])
+        nose_y = bot['y'] + (bot['diameter'] / 2) * jnp.sin(bot['orientation'])
+        # Draw an arrow to represent the bot's orientation
+        ax.arrow(
+            bot['x'], bot['y'],  # Starting point (bot's center)
+            nose_x - bot['x'], nose_y - bot['y'],  # Arrow vector
+            head_width=bot['diameter'] * 0.2,  # Arrowhead width
+            head_length=bot['diameter'] * 0.3,  # Arrowhead length
+            fc='white', ec='white',  # Arrow color
+            length_includes_head=True  # Include head in length calculation
     
     # Plot trees
     for tree in data['trees']:
