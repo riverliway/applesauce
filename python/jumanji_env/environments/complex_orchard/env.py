@@ -157,7 +157,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         # Determine if the episode is over
         terminate = jnp.all(state.apples.collected)
         truncate = state.step_count >= self.time_limit
-        observation = self._observer.state_to_observation(state)
+        observation = self._observer.state_to_observation(new_state)
 
         timestep = jax.lax.switch(
             terminate + 2 * truncate,
