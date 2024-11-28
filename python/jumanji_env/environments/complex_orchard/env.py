@@ -303,9 +303,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
             return jnp.linalg.norm(apple_position - bot_nose) <= ROBOT_INTERACTION_DISTANCE
 
-        is_close: JaxArray['num_bots'] = (nearest_apple_id != -1) & 
-                                            pick_mask & 
-                                            jax.vmap(is_close_check)(nearest_apple_id, nose)
+        is_close: JaxArray['num_bots'] = ((nearest_apple_id != -1) & pick_mask & jax.vmap(is_close_check)(nearest_apple_id, nose))
                                             
         can_pick: JaxArray['num_bots'] = is_close & (state.bots.holding == -1)
 
