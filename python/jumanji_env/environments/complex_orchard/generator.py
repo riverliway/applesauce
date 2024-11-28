@@ -85,8 +85,8 @@ class ComplexOrchardGenerator:
     start_y = (self.height - (num_trees_y - 1) * tree_row_distance) / 2
 
     # Create the positions
-    tree_x = jnp.arange(start_x, start_x + num_trees_x * tree_row_distance, tree_row_distance)
-    tree_y = jnp.arange(start_y, start_y + num_trees_y * tree_row_distance, tree_row_distance)
+    tree_x = jnp.arange(start_x+150, start_x + num_trees_x * tree_row_distance, tree_row_distance)
+    tree_y = jnp.arange(start_y+150, start_y + num_trees_y * tree_row_distance, tree_row_distance)
     
     position_offset = self.random_normal(key, (len(tree_x), len(tree_y), 2), TREE_VARIATION)
 
@@ -218,7 +218,7 @@ class ComplexOrchardGenerator:
     num_total_bots = self.num_picker_bots + self.num_pusher_bots
 
     bot_x = jnp.linspace(0, self.width, num_total_bots + 1, endpoint=False)[1:]
-    bot_y = jnp.full((num_total_bots,), 50)
+    bot_y = jnp.full((num_total_bots,), self.height/2)
 
     bot_positions = jnp.stack([bot_x, bot_y], axis=1)
     bot_diameters = jnp.full((num_total_bots,), ROBOT_DIAMETER)
@@ -241,7 +241,7 @@ class ComplexOrchardGenerator:
     """
 
     basket_x = jnp.linspace(0, self.width, self.num_baskets + 1, endpoint=False)[1:]
-    basket_y = jnp.full((self.num_baskets,), 50)
+    basket_y = jnp.full((self.num_baskets,), 100)
 
     basket_positions = jnp.stack([basket_x, basket_y], axis=1)
     basket_diameters = jnp.full((self.num_baskets,), BASKET_DIAMETER)

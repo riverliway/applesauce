@@ -47,7 +47,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
     def __init__(
         self,
         generator: Optional[ComplexOrchardGenerator] = None,
-        time_limit: int = 100,
+        time_limit: int = 500,
         normalize_reward: bool = True,
         penalty: float = 0.0,
     ) -> None:
