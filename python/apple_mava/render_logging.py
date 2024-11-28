@@ -326,6 +326,7 @@ def visualize_step(data, step_index, save_path):
             head_length=bot['diameter'] * 0.3,  # Arrowhead length
             fc='white', ec='white',  # Arrow color
             length_includes_head=True  # Include head in length calculation
+        )
     
     # Plot trees
     for tree in data['trees']:
