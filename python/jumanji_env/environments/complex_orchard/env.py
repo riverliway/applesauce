@@ -289,7 +289,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         # Perform the pickup action
         nearest_apple_id: JaxArray['num_bots'] = self._nearest_apple(state)
         nose: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
-
+        
         def is_close_check(nearest_apple_id: int, bot_nose: JaxArray[2]) -> bool:
             """
             Determines if a bot is close enough to their nearest apple to pick it up.
@@ -301,11 +301,15 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             """
             apple_position: JaxArray[2] = state.apples.position[nearest_apple_id]
 
-            return jnp.linalg.norm(apple_position - bot_nose) <= ROBOT_INTERACTION_DISTANCE
+            return jax.lax.cond(
+                nearest_apple_id != -1,
+                lambda: jnp.linalg.norm(apple_position - bot_nose) <= ROBOT_INTERACTION_DISTANCE,
+                lambda: False,
+            )
 
-        is_close: JaxArray['num_bots'] = ((nearest_apple_id != -1) & pick_mask & jax.vmap(is_close_check)(nearest_apple_id, nose))
+        is_close: JaxArray['num_bots'] = jax.vmap(is_close_check)(nearest_apple_id, nose)
                                             
-        can_pick: JaxArray['num_bots'] = is_close & (state.bots.holding == -1)
+        can_pick: JaxArray['num_bots'] = is_close & (state.bots.holding == -1) & pick_mask
 
         def update_holding(can_pick: bool, nearest_apple_id: int, existing_holding: int) -> int:
             """
@@ -326,22 +330,23 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         new_holding: JaxArray['num_bots'] = jax.vmap(update_holding)(can_pick, nearest_apple_id, state.bots.holding)
 
-        def update_held(apple_id: int, held: bool, nearest_apple_id: JaxArray['num_bots']) -> bool:
+        def update_held(apple_id: int, held: bool, nearest_apple_id: JaxArray['num_bots'], can_pick: JaxArray['num_bots']) -> bool:
             """
             Updates the held state of the apples based on if they were picked up.
 
             :param apple_id: The id of the apple we're deciding the state for
             :param nearest_apple_id: The id of the nearest apple to each bot
             :param held: The current state of the apples.held
+            :param can_pick: A boolean indicating if the bot can pick up the apple
             """
 
             return jax.lax.cond(
-                jnp.any(apple_id == nearest_apple_id),
+                jnp.any((apple_id == nearest_apple_id) & can_pick),
                 lambda: True,
                 lambda: held
             )
 
-        new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, 0, None))(state.apples.id, state.apples.held, nearest_apple_id)
+        new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, 0, None, None))(state.apples.id, state.apples.held, nearest_apple_id, can_pick)
 
         return new_holding, new_held, pick_mask & (~can_pick), pick_mask & can_pick
 
