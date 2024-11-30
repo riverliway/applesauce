@@ -42,7 +42,7 @@ from jumanji_env.environments.complex_orchard.custom_mava import make_env
 config: DictConfig = OmegaConf.create(config)
 
 # Convert config to baseline for easy print out review
-config = apply_baseline_config(config, use_baseline=True)
+config = apply_baseline_config(config, use_baseline=False)
 
 print("Generating environment. . .")
 # File to store the current version
@@ -172,7 +172,7 @@ table.to_csv(f'attempts/{readable_time}/episode_metrics_{readable_time}.csv', in
 
 
 print("Executing render episode . . .")
-render_data = render_one_episode_complex(orchard_version_name, config, trained_params, max_steps=20, verbose=False)
+render_data = render_one_episode_complex(orchard_version_name, config, trained_params, max_steps=200, verbose=False)
 
 print("Generating GIF. . . ")
 generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")

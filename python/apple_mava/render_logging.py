@@ -262,7 +262,7 @@ def plot_performance(mean_episode_return, ep_returns, start_time, config, save=F
         plt.savefig(f"attempts/{readable_time}/evaluation_plot_{readable_time}")
     else:
         plt.show()
-        print("Episode Return:", mean_episode_return)         
+        print(f"Episode {len(ep_returns)} Return: {mean_episode_return},   Time: {(time.time() - start_time)})         
     return ep_returns
 
 def visualize_environment(data):
