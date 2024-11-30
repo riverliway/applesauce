@@ -2,8 +2,10 @@ import time  # For timing the execution in plot_performance
 import numpy as np  # For numerical operations
 import matplotlib.pyplot as plt  # For plotting the performance
 from matplotlib.animation import FuncAnimation
+plt.rcParams['figure.max_open_warning'] = 0
 import imageio
 import os
+import shutil
 
 from IPython.display import clear_output  # For updating the plot dynamically
 import jax  # For JAX utilities
@@ -236,7 +238,7 @@ def create_complex_dict(state, seed) -> dict:
         "TICK_SPEED": TICK_SPEED
     }
 
-def plot_performance(mean_episode_return, ep_returns, start_time, config):
+def plot_performance(mean_episode_return, ep_returns, start_time, config, save=False):
     """visualises the performance of the algorithm. This plot will be refreshed each time evaluation interval happens."""
     
     plt.figure(figsize=(8, 4))
@@ -255,7 +257,12 @@ def plot_performance(mean_episode_return, ep_returns, start_time, config):
     plt.title(f"{width}x{height} Apple Orchard with {pickers} Agents")
 
     # Show the plot
-    plt.show()
+    if save:
+        readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
+        plt.savefig(f"attempts/{readable_time}/evaluation_plot_{readable_time}")
+    else:
+        plt.show()
+        print("Episode Return:", mean_episode_return)         
     return ep_returns
 
 def visualize_environment(data):
@@ -372,4 +379,4 @@ def generate_gif(data_list, output_gif_path, temp_dir="temp_frames"):
     # Clean up temporary frame files
     for frame_path in frame_paths:
         os.remove(frame_path)
-    os.rmdir(temp_dir)
+    shutil.rmtree(temp_dir)
