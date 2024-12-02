@@ -381,8 +381,7 @@ def get_learner_fn(
     return learner_fn
 
 def learner_setup(
-    env: jumanji.Environment, keys: chex.Array, config: DictConfig)
-) -> Tuple[LearnerFn[LearnerState], Actor, LearnerState]:
+    env: jumanji.Environment, keys: chex.Array, config: DictConfig) -> Tuple[LearnerFn[LearnerState], Actor, LearnerState]:
     """Initialises components for training: the learner function, actor and critic networks and optimizers and environment states. It creates a function for learning, employs parallel processing over the cores for efficiency, and sets up initial states."""
     # Get available TPU cores.
     n_devices = len(jax.devices())
