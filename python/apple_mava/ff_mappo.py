@@ -413,16 +413,9 @@ def learner_setup(
     obs = env.observation_spec().generate_value()
     init_x = tree.map(lambda x: x[jnp.newaxis, ...], obs)
 
-    if os.path.exists(checkpoint_dir):
-        print(f"Loading parameters from checkpoint.")
-        checkpoint_data = checkpoints.restore_checkpoint(checkpoint_dir, target=None)
-        actor_params = checkpoint_data['actor_params']
-        critic_params = checkpoint_data['critic_params']
-    else:
-        print("No checkpoint found. Initializing parameters randomly.")
-        # Initialise params
-        actor_params = actor_network.init(actor_net_key, init_x)
-        critic_params = critic_network.init(critic_net_key, init_x)
+    # Initialise params
+    actor_params = actor_network.init(actor_net_key, init_x)
+    critic_params = critic_network.init(critic_net_key, init_x)
 
     # initialize optimizer states
     actor_opt_state = actor_optim.init(actor_params)

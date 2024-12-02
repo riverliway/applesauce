@@ -87,9 +87,6 @@ print("Setting up model . . .")
 key = jax.random.PRNGKey(config.system.seed)
 key, key_e, actor_net_key, critic_net_key = jax.random.split(key, num=4)
 
-# checkpoint directory for params
-checkpoint_dir = "/home/ubuntu/applesauce/python/train/checkpoints"
-
 # Setup learner.
 learn, actor_network, learner_state = learner_setup(
     env, (key, actor_net_key, critic_net_key), config, checkpoint_dir
@@ -128,7 +125,6 @@ for _ in range(config["arch"]["num_evaluation"]):
 
     # Prepare for evaluation.
     actor_params = unreplicate_batch_dim(trained_params.actor_params)
-    critic_params = unreplicate_batch_dim(trained_params.critic_params)
 
     key_e, *eval_keys = jax.random.split(key_e, n_devices + 1)
     eval_keys = jnp.stack(eval_keys)
@@ -147,23 +143,9 @@ for _ in range(config["arch"]["num_evaluation"]):
     # Update runner state to continue training.
     learner_state = learner_output.learner_state
 
-# Extract the optimizer states from the learner_state.
-actor_opt_state = unreplicate_n_dims(learner_state.opt_states.actor_opt_state, unreplicate_depth=1)
-critic_opt_state = unreplicate_n_dims(learner_state.opt_states.critic_opt_state, unreplicate_depth=1)
-
 actor_params = unreplicate_n_dims(actor_params, unreplicate_depth=1)
-critic_params = unreplicate_n_dims(critic_params, unreplicate_depth=1)
 
-# Prepare the checkpoint data, including parameters and optimizer states.
-checkpoint_data = {
-    "actor_params": actor_params,
-    "critic_params": critic_params
-}
-
-# checkpointing parameters
-checkpoints.save_checkpoint(checkpoint_dir, checkpoint_data, step=config["arch"]["num_evaluation"])
-
-print("Training Complete and checkpoint saved . . .")
+print("Training Complete . . .")
 
 data = learner_state.timestep.extras
 
@@ -193,7 +175,7 @@ table.to_csv(f'attempts/{readable_time}/episode_metrics_{readable_time}.csv', in
 
 
 print("Executing render episode . . .")
-render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=10, verbose=False)
+render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=1000, verbose=False)
 
 print("Generating GIF. . . ")
 generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
