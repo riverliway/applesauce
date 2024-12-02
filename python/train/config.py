@@ -32,8 +32,8 @@ config = {
         "kwargs": {"time_limit": 500},
         "scenario": {
             "task_config": {
-                "width": 500,
-                "height": 500,
+                "width": 1200,
+                "height": 1200,
                 "num_picker_bots": 2,
                 "num_pusher_bots": 0,
                 "num_baskets": 1,
