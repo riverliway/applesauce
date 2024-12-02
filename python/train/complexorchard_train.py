@@ -18,6 +18,7 @@ import importlib
 import inspect
 import time
 from IPython.display import Image, display
+from flax.training import checkpoints
 
 # adding parent directory to path
 sys.path.append("/home/ubuntu/applesauce/python")
@@ -42,7 +43,7 @@ from jumanji_env.environments.complex_orchard.custom_mava import make_env
 config: DictConfig = OmegaConf.create(config)
 
 # Convert config to baseline for easy print out review
-config = apply_baseline_config(config, use_baseline=False)
+config = apply_baseline_config(config, use_baseline=True)
 
 print("Generating environment. . .")
 # File to store the current version
@@ -86,9 +87,12 @@ print("Setting up model . . .")
 key = jax.random.PRNGKey(config.system.seed)
 key, key_e, actor_net_key, critic_net_key = jax.random.split(key, num=4)
 
+# checkpoint directory for params
+checkpoint_dir = "/home/ubuntu/applesauce/python/train/checkpoints"
+
 # Setup learner.
 learn, actor_network, learner_state = learner_setup(
-    env, (key, actor_net_key, critic_net_key), config
+    env, (key, actor_net_key, critic_net_key), config, checkpoint_dir
 )
 
 eval_act_fn = make_ff_eval_act_fn(actor_network.apply, config)
@@ -120,14 +124,18 @@ for _ in range(config["arch"]["num_evaluation"]):
     # collecting training data
 
     # Prepare for evaluation.
-    trained_params = unreplicate_batch_dim(learner_state.params.actor_params)
+    trained_params = learner_state.params  # Capture both actor and critic params.
+
+    # Prepare for evaluation.
+    actor_params = unreplicate_batch_dim(trained_params.actor_params)
+    critic_params = unreplicate_batch_dim(trained_params.critic_params)
 
     key_e, *eval_keys = jax.random.split(key_e, n_devices + 1)
     eval_keys = jnp.stack(eval_keys)
     eval_keys = eval_keys.reshape(n_devices, -1)
 
     # Evaluate.
-    evaluator_output = evaluator(trained_params, eval_keys, {})
+    evaluator_output = evaluator(actor_params, eval_keys, {})
     jax.block_until_ready(evaluator_output)
 
     mean_episode_return = jnp.mean(evaluator_output["episode_return"])
@@ -139,10 +147,23 @@ for _ in range(config["arch"]["num_evaluation"]):
     # Update runner state to continue training.
     learner_state = learner_output.learner_state
 
-# Return trained params to be used for rendering or testing.
-trained_params = unreplicate_n_dims(trained_params, unreplicate_depth=1)
+# Extract the optimizer states from the learner_state.
+actor_opt_state = unreplicate_n_dims(learner_state.opt_states.actor_opt_state, unreplicate_depth=1)
+critic_opt_state = unreplicate_n_dims(learner_state.opt_states.critic_opt_state, unreplicate_depth=1)
 
-print("Training Complete . . .")
+actor_params = unreplicate_n_dims(actor_params, unreplicate_depth=1)
+critic_params = unreplicate_n_dims(critic_params, unreplicate_depth=1)
+
+# Prepare the checkpoint data, including parameters and optimizer states.
+checkpoint_data = {
+    "actor_params": actor_params,
+    "critic_params": critic_params
+}
+
+# checkpointing parameters
+checkpoints.save_checkpoint(checkpoint_dir, checkpoint_data, step=config["arch"]["num_evaluation"])
+
+print("Training Complete and checkpoint saved . . .")
 
 data = learner_state.timestep.extras
 
@@ -172,7 +193,7 @@ table.to_csv(f'attempts/{readable_time}/episode_metrics_{readable_time}.csv', in
 
 
 print("Executing render episode . . .")
-render_data = render_one_episode_complex(orchard_version_name, config, trained_params, max_steps=200, verbose=False)
+render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=10, verbose=False)
 
 print("Generating GIF. . . ")
 generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
