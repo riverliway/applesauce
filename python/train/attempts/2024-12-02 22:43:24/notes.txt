@@ -1,0 +1,6 @@
+modified the config file to the following for this run:
+ -  "rollout_length": 256,
+ - "num_evaluation": 60,
+ - "ppo_epochs": 32,
+
+Forgot to change the number of steps to render! ugh!!!
