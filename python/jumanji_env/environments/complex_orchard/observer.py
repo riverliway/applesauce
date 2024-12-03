@@ -184,7 +184,8 @@ class BasicObserver(ComplexOrchardObserver):
     Returns: The boolean action mask for all agents. Shape: (num_agents, 7)
     """
 
-    possible_forward_backward: JaxArray['num_agents', 2] = bots_possible_moves(state)[:, :, 2]
+    possible_forward_backward, _, _ = bots_possible_moves(state)
+    possible_forward_backward = possible_forward_backward[:, :, 2]
     possible_actions: JaxArray['num_agents', 'NUM_ACTIONS'] = jnp.ones((len(state.bots.diameter), NUM_ACTIONS), dtype=bool)
 
     # The 1:2 is a references to the FORWARD = 1 and BACKWARD = 2 actions defined in the constants.py file
