@@ -43,7 +43,7 @@ from jumanji_env.environments.complex_orchard.custom_mava import make_env
 config: DictConfig = OmegaConf.create(config)
 
 # Convert config to baseline for easy print out review
-config = apply_baseline_config(config, use_baseline=False)
+config = apply_baseline_config(config)
 
 print("Generating environment. . .")
 # File to store the current version
@@ -71,10 +71,16 @@ version_number = get_next_version()
 # Assign orchard name with the updated version
 orchard_version_name = f'ComplexOrchard-v{version_number}'
 
+# Extract the time limit for training from the config
+train_time_limit = config["env"]["train_time_limit"]
+
 # Register the orchard
 register(
     id=orchard_version_name,
     entry_point='__main__:ComplexOrchard',
+     kwargs={
+        "time_limit": train_time_limit
+    },
 )
 
 print(f"Registered orchard version: {orchard_version_name}")
@@ -174,7 +180,28 @@ table.to_csv(f'attempts/{readable_time}/episode_metrics_{readable_time}.csv', in
 
 
 print("Executing render episode . . .")
-render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=1000, verbose=False)
+
+# re-registering the environment to extend time_limit for rendering. . . 
+# Get the next version number
+version_number = get_next_version()
+
+# Assign orchard name with the updated version
+orchard_version_name = f'ComplexOrchard-v{version_number}'
+
+# Extract the time limit for rendering from the config
+render_time_limit = config["env"]["render_time_limit"]
+
+# Register the orchard with the updated time_limit
+register(
+    id=orchard_version_name,
+    entry_point='__main__:ComplexOrchard',
+    kwargs={
+        "time_limit": render_time_limit
+    },
+)
+
+print(f"Registered orchard version: {orchard_version_name}")
+render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=render_time_limit, verbose=False)
 
 print("Generating GIF. . . ")
 generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")

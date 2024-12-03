@@ -7,7 +7,7 @@ import flax.jax_utils  # For utility functions such as `replicate`
 from flax.training import checkpoints
 import jumanji
 from jax import tree
-from typing import Tuple, Any  # For type annotations
+from typing import Tuple, Any, Dict  # For type annotations
 from omegaconf import DictConfig, OmegaConf  # For handling configuration
 from flax.core.frozen_dict import FrozenDict
 from optax._src.base import OptState
@@ -19,7 +19,7 @@ from mava.utils.jax_utils import (
     unreplicate_batch_dim,
     unreplicate_n_dims,
 )
-from mava.systems.ppo.types import LearnerState, OptStates, Params, PPOTransition
+from mava.systems.ppo.types import LearnerState, OptStates, Params
 from mava.utils.training import make_learning_rate
 from mava.types import (
     ExperimentOutput,
@@ -28,12 +28,29 @@ from mava.types import (
     CriticApply,
 )
 
+# the following is being added because of modifications being made to the underlying packages downloaded from mava repo.  This is not necessary for ec2 instance but is necessary for any new download from mava. (i.e. beginning of notebooks)
+import chex
+from typing_extensions import NamedTuple
+from mava.types import Action, Done, HiddenState, Observation, State, Value
+class PPOTransition(NamedTuple):
+    """Transition tuple for PPO."""
+
+    done: Done
+    action: Action
+    value: Value
+    reward: chex.Array
+    log_prob: chex.Array
+    obs: Observation
+    info: Dict
+    
 # our custom implementations
 from apple_mava.ff_networks import Actor, Critic 
 
-def apply_baseline_config(config: DictConfig, use_baseline: bool) -> DictConfig:
+
+
+def apply_baseline_config(config: DictConfig) -> DictConfig:
     """Applies minimal values to model parameters to allow for easy review of printed outputs."""
-    if use_baseline:
+    if config["system"]["use_baseline"]:
         baseline_config = {
                           "system": {
                               "update_batch_size": 1,
