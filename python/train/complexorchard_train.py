@@ -43,7 +43,7 @@ from jumanji_env.environments.complex_orchard.custom_mava import make_env
 config: DictConfig = OmegaConf.create(config)
 
 # Convert config to baseline for easy print out review
-config = apply_baseline_config(config, use_baseline=True)
+config = apply_baseline_config(config, use_baseline=False)
 
 print("Generating environment. . .")
 # File to store the current version
@@ -89,8 +89,7 @@ key, key_e, actor_net_key, critic_net_key = jax.random.split(key, num=4)
 
 # Setup learner.
 learn, actor_network, learner_state = learner_setup(
-    env, (key, actor_net_key, critic_net_key), config, checkpoint_dir
-)
+    env, (key, actor_net_key, critic_net_key), config)
 
 eval_act_fn = make_ff_eval_act_fn(actor_network.apply, config)
 
