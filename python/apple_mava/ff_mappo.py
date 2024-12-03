@@ -31,9 +31,9 @@ from mava.types import (
 # our custom implementations
 from apple_mava.ff_networks import Actor, Critic 
 
-def apply_baseline_config(config: DictConfig, use_baseline: bool) -> DictConfig:
+def apply_baseline_config(config: DictConfig) -> DictConfig:
     """Applies minimal values to model parameters to allow for easy review of printed outputs."""
-    if use_baseline:
+    if config["system"]["use_baseline"]:
         baseline_config = {
                           "system": {
                               "update_batch_size": 1,
