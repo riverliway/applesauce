@@ -118,7 +118,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             `TimeStep` object corresponding the timestep returned by the environment.
         """
         # Perform the actions for the bots
-        new_bot_positions, did_collide, out_of_bounds = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
+        new_bot_positions, out_of_bounds = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
         new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
         new_holding, new_held, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
         new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
@@ -205,7 +205,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         and a boolean array indicating if the bot tried to collide with something. Shape: (num_bots,)
         """
 
-        possible_moves, is_intersecting, out_of_bounds = bots_possible_moves(state)
+        possible_moves, out_of_bounds = bots_possible_moves(state)
 
         # If the bot is even capable of moving to that location
         can_forwards: JaxArray['num_bots'] = possible_moves[:, 0, 2] > 0.5
@@ -255,7 +255,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         
         did_collide: JaxArray['num_bots'] = (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
 
-        return new_positions, did_collide, out_of_bounds
+        return new_positions, out_of_bounds
     
     def _perform_turn(
         self,

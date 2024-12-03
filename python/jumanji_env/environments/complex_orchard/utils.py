@@ -113,4 +113,4 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
 
   new_positions: JaxArray['num_bots', 2, 3] = new_positions.at[:, :, 2].set(is_possible)
 
-  return new_positions, is_intersecting, ~is_within_bounds
+  return new_positions, ~is_within_bounds
