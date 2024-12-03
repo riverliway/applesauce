@@ -218,7 +218,7 @@ class ComplexOrchardGenerator:
     num_total_bots = self.num_picker_bots + self.num_pusher_bots
 
     bot_x = jnp.linspace(0, self.width, num_total_bots + 1, endpoint=False)[1:]
-    bot_y = jnp.full((num_total_bots,), self.height/2)
+    bot_y = jnp.full((num_total_bots,), 200)
 
     bot_positions = jnp.stack([bot_x, bot_y], axis=1)
     bot_diameters = jnp.full((num_total_bots,), ROBOT_DIAMETER)

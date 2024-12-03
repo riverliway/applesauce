@@ -4,12 +4,14 @@ import optax  # For defining optimizers and their updates
 import chex  # For type-checking and utility functions for arrays
 import flax  # For JAX-compatible neural network abstractions
 import flax.jax_utils  # For utility functions such as `replicate`
+from flax.training import checkpoints
 import jumanji
 from jax import tree
 from typing import Tuple, Any  # For type annotations
 from omegaconf import DictConfig, OmegaConf  # For handling configuration
 from flax.core.frozen_dict import FrozenDict
 from optax._src.base import OptState
+import os
 
 # mava importations
 from mava.utils.jax_utils import (
@@ -379,8 +381,7 @@ def get_learner_fn(
     return learner_fn
 
 def learner_setup(
-    env: jumanji.Environment, keys: chex.Array, config: DictConfig
-) -> Tuple[LearnerFn[LearnerState], Actor, LearnerState]:
+    env: jumanji.Environment, keys: chex.Array, config: DictConfig) -> Tuple[LearnerFn[LearnerState], Actor, LearnerState]:
     """Initialises components for training: the learner function, actor and critic networks and optimizers and environment states. It creates a function for learning, employs parallel processing over the cores for efficiency, and sets up initial states."""
     # Get available TPU cores.
     n_devices = len(jax.devices())
@@ -411,12 +412,12 @@ def learner_setup(
     obs = env.observation_spec().generate_value()
     init_x = tree.map(lambda x: x[jnp.newaxis, ...], obs)
 
-    # Initialise actor params and optimiser state.
+    # Initialise params
     actor_params = actor_network.init(actor_net_key, init_x)
-    actor_opt_state = actor_optim.init(actor_params)
-
-    # Initialise critic params and optimiser state.
     critic_params = critic_network.init(critic_net_key, init_x)
+
+    # initialize optimizer states
+    actor_opt_state = actor_optim.init(actor_params)
     critic_opt_state = critic_optim.init(critic_params)
 
     # Pack params.
