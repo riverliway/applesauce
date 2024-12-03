@@ -22,7 +22,7 @@ from jumanji_env.environments.complex_orchard.env import ComplexOrchard
 # This function replaces functionality of Mava's `mava.utils.make_env` functionality. 
 # right now this just contains the RecordEpisodeMetrics wrapper and does not contain an equivalent
 # to the LbfWrapper
-def make_env(env_name: str, config: DictConfig, add_global_state: bool = False) -> Tuple[MarlEnv, MarlEnv]:
+def make_env(env_name: str, config: DictConfig, add_global_state: bool = False, use_individual_rewards: bool = False) -> Tuple[MarlEnv, MarlEnv]:
     """
     Create Jumanji environments for training and evaluation.
 

@@ -20,10 +20,13 @@ from jumanji_env.environments.complex_orchard.constants import TICK_SPEED
 
 def render_one_episode_simple(orchard_version_name, config, params, max_steps, verbose=True) -> None:
     """Simulates and visualises one episode from rolling out a trained MAPPO model that will be passed to the function using actors_params."""
+    
     # Create envs
     env_config = {**config.env.kwargs, **config.env.scenario.env_kwargs}
     env, eval_env = make_env(orchard_version_name, config)
 
+    env._env.time_limit = max_steps  # Override time limit directly
+    
     # Create actor networks (We only care about the policy during rendering)
     actor_network = Actor(env.action_dim)
     apply_fn = actor_network.apply
@@ -106,7 +109,7 @@ def render_one_episode_simple(orchard_version_name, config, params, max_steps, v
 def render_one_episode_complex(orchard_version_name, config, params, max_steps, verbose=True) -> None:
     """Simulates and visualises one episode from rolling out a trained MAPPO model that will be passed to the function using actors_params."""
     # Create envs
-    env_config = {**config.env.kwargs, **config.env.scenario.env_kwargs}
+    # env_config = {**config.env.kwargs, **config.env.scenario.env_kwargs}
     env, eval_env = make_complex_env(orchard_version_name, config)
 
     # Create actor networks (We only care about the policy during rendering)
