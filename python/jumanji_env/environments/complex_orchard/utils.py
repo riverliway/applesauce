@@ -113,4 +113,7 @@ def bots_possible_moves(state: ComplexOrchardState) -> JaxArray['num_bots', 2, 3
 
   new_positions: JaxArray['num_bots', 2, 3] = new_positions.at[:, :, 2].set(is_possible)
 
-  return new_positions, ~is_within_bounds
+  # Calculate out-of-bounds
+  out_of_bounds = ~jnp.all(is_within_bounds, axis=1)
+  any_collisions = jnp.all(is_intersecting.reshape(num_bots, 2), axis=1)
+  return new_positions, out_of_bounds, any_collisions
