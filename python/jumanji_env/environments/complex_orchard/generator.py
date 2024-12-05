@@ -75,6 +75,8 @@ class ComplexOrchardGenerator:
 
     The final return is a flat array of the diameter of each tree.
     """
+
+    position_key, fertility_key, diameter_key = jax.random.split(key, 3)
     
     # Calculate the number of trees that can fit into the width and height
     num_trees_x = int((self.width - tree_row_distance) // tree_row_distance) + 1
@@ -88,7 +90,7 @@ class ComplexOrchardGenerator:
     tree_x = jnp.arange(start_x, start_x + num_trees_x * tree_row_distance, tree_row_distance)
     tree_y = jnp.arange(start_y+100, start_y + num_trees_y * tree_row_distance, tree_row_distance)
     
-    position_offset = self.random_normal(key, (len(tree_x), len(tree_y), 2), TREE_VARIATION)
+    position_offset = self.random_normal(position_key, (len(tree_x), len(tree_y), 2), TREE_VARIATION)
 
     positions = jnp.array([
       [tree_x[i_x] + position_offset[i_x][i_y][0], tree_y[i_y] + position_offset[i_x][i_y][1]]
@@ -96,8 +98,8 @@ class ComplexOrchardGenerator:
       for i_y in range(len(tree_y))
     ])
 
-    fertility = jax.random.uniform(key, (len(tree_x) * len(tree_y),))
-    diameter = self.random_normal(key, (len(tree_x) * len(tree_y),), TREE_DIAMETER)
+    fertility = jax.random.uniform(fertility_key, (len(tree_x) * len(tree_y),))
+    diameter = self.random_normal(diameter_key, (len(tree_x) * len(tree_y),), TREE_DIAMETER)
 
     return positions, fertility, diameter
 
