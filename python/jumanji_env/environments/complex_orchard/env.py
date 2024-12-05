@@ -20,6 +20,7 @@ from jumanji_env.environments.complex_orchard.constants import (
   RIGHT,
   PICK,
   DROP,
+  NOOP,
   APPLE_DIAMETER,
   REWARD_OUT_OF_BOUNDS,
   REWARD_BAD_PICK,
@@ -552,7 +553,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         reward += did_pick_apple * REWARD_PICK_APPLE
         reward += did_bad_apple_drop * REWARD_DROPPED_APPLE
         reward += did_collect_apple * REWARD_COLLECT_APPLE
-        reward += actions == NOOP * 
+        reward += (actions == NOOP) * REWARD_NOOPING
         
 
         return reward
