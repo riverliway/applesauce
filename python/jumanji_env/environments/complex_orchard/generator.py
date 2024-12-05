@@ -125,8 +125,9 @@ class ComplexOrchardGenerator:
     """
     
     num_trees: int = len(tree_diameter)
+    theta_key, diameter_key, distance_key = jax.random.split(key, 3)
 
-    theta_offsets: JaxArray['num_trees'] = jax.random.uniform(key, (num_trees,), maxval=2 * jnp.pi)
+    theta_offsets: JaxArray['num_trees'] = jax.random.uniform(theta_key, (num_trees,), maxval=2 * jnp.pi)
 
     # We used to generate a random number of apples per tree, but now we always generate the same number of apples
     # num_apples = jnp.floor(jax.nn.relu(self.random_normal(key, (num_trees), ORCHARD_FERTILITY) * tree_fertility)).astype(jnp.int32)
@@ -136,7 +137,7 @@ class ComplexOrchardGenerator:
 
     max_apple_size: int = APPLE_DIAMETER[1] * 2
 
-    def create_apples(theta: float, tree_pos: JaxArray[2], tree_diameter: float) -> JaxArray['num_apples_per_tree', 2]:
+    def create_apples(theta: float, tree_pos: JaxArray[2], tree_diameter: float, apple_key: chex.PRNGKey) -> JaxArray['num_apples_per_tree', 2]:
       """
       This is a function that generates the apple positions for a single tree.
       It will get vmaped over to generate the apple positions for all trees.
@@ -149,12 +150,14 @@ class ComplexOrchardGenerator:
       Returns: an array of the apple positions
       """
 
+      theta_off_key, radii_key = jax.random.split(apple_key, 2)
+
       # We always generate the same number of apples per tree and in a tight ring around the tree
       # because we can't afford to do obstacle checking for every apple since that would result in a variable number of apples
       thetas = jnp.linspace(0, 2 * jnp.pi, num_apples_per_tree, endpoint=False) + theta
-      thetas += jax.random.uniform(key, (num_apples_per_tree,), maxval=0.1)
+      thetas += jax.random.uniform(theta_off_key, (num_apples_per_tree,), maxval=0.1)
 
-      radii = jax.random.uniform(key, (num_apples_per_tree,))
+      radii = jax.random.uniform(radii_key, (num_apples_per_tree,))
       radii = radii * tree_diameter * 3 + tree_diameter + max_apple_size
 
       apple_x = radii * jnp.cos(thetas) + tree_pos[0]
@@ -165,7 +168,7 @@ class ComplexOrchardGenerator:
 
       return jnp.ravel(jnp.stack([apple_x, apple_y], axis=1))
     
-    apple_positions: JaxArray['num_apples', 2] = jax.vmap(create_apples)(theta_offsets, tree_positions, tree_diameter)
+    apple_positions: JaxArray['num_apples', 2] = jax.vmap(create_apples)(theta_offsets, tree_positions, tree_diameter, jax.random.split(distance_key, num_trees))
     apple_positions = jnp.ravel(apple_positions)
 
     apple_x = apple_positions[::2]
@@ -195,7 +198,7 @@ class ComplexOrchardGenerator:
 
     apple_positions = jnp.stack([apple_x, apple_y], axis=1)
 
-    apple_diameters = self.random_normal(key, (len(apple_x),), APPLE_DIAMETER)
+    apple_diameters = self.random_normal(diameter_key, (len(apple_x),), APPLE_DIAMETER)
     apple_collected = jnp.zeros((len(apple_x),), dtype=bool)
     apple_held = jnp.zeros((len(apple_x),), dtype=bool)
 
