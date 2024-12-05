@@ -3,12 +3,12 @@ import { OrchardComplex2D } from '../../context/apiTypes'
 import { TextField } from '@mui/material'
 import { OrchardComplex } from './OrchardComplex'
 import { Timer } from '../Common/Timer'
-import { ArrowLeft, ArrowRight, FirstPage, LastPage, Pause, PlayArrow } from '@mui/icons-material'
+import { FirstPage, LastPage, Pause, PlayArrow } from '@mui/icons-material'
 
 const VIEW_WIDTH = 500
 const VIEW_HEIGHT = 500
 const SCALE = 1
-const SIM_DISPLAY_SPEED = 0.05
+const SIM_DISPLAY_SPEED = 0.1
 
 export const Playback: React.FC = () => {
   const [history, setHistory] = useState<OrchardComplex2D[]>([])

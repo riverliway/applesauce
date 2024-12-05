@@ -225,7 +225,7 @@ class ComplexSolver:
     :return: [list[tuple[int, int]]] the path to follow.
     """
 
-    scale = 10
+    scale = 5
     self.__print(f'Running A* with scale {scale}')
     path = self.__astar_grid(bot_idx, target, scale)
     if path is not None:

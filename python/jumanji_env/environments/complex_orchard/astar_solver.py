@@ -21,11 +21,11 @@ from jumanji_env.environments.complex_orchard.constants import (
 )
 
 class AStarSolver:
-  def __init__(self, gen: ComplexOrchardGenerator, key: chex.PRNGKey):
+  def __init__(self, gen: ComplexOrchardGenerator, seed: int):
     self.gen = gen
     self.env = ComplexOrchard(gen, time_limit=10_000)
-    self.key = key
-    self.id = jax.random.randint(key, (), 1, 10_000).item()
+    self.key = jax.random.key(seed)
+    self.id = seed
     self.state, _ = self.env.reset(self.key)
 
     self.write = True
@@ -63,7 +63,7 @@ class AStarSolver:
 
     return old_env
 
-  def simulate(self) -> int:
+  def simulate(self, timeout: int) -> float:
     """
     Runs the solver until it finishes.
     This cannot be VMAPed as the solver is stateful.
@@ -71,12 +71,12 @@ class AStarSolver:
     :return: The number of steps taken to solve the environment.
     """
 
-    did_finish = False
+    percent = 0
 
-    while not did_finish:
-      did_finish = self.step()
+    while self.state.step_count.item() < timeout:
+      percent = self.step()
 
-    return self.env.step_count
+    return percent
 
   def step(self) -> bool:
     """
@@ -88,9 +88,7 @@ class AStarSolver:
     state, timestep = self.env.step(self.state, self._solve())
     self.state = state
 
-    # print(timestep.extras['percent_collected'])
-
-    return timestep.extras['percent_collected'] >= 95
+    return timestep.extras['percent_collected']
 
   def _solve(self) -> JaxArray['num_agents']:
     """
@@ -102,7 +100,7 @@ class AStarSolver:
     self.solver.environment = self._create_old_env()
 
     actions = self.solver.make_decisions()
-    print(actions)
+    # print(actions)
 
     return jnp.array(
       [self._convert_action(action) for action in actions],
