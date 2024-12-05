@@ -272,6 +272,7 @@ class IntermediateObserver(BasicObserver):
         apples_held: JaxArray,
         apples_collected: JaxArray,
         baskets_position: JaxArray,
+        all_bots_positions: JaxArray
       ) -> JaxArray:
         """
         Makes the observation for a single agent.
@@ -345,31 +346,31 @@ class IntermediateObserver(BasicObserver):
 
             return nearest_apples_padded, nearest_basket
 
-        # def find_nearest_bot() -> JaxArray[3]:
-        #     # Exclude the current bot from the distance calculation
-        #     mask_self = jnp.all(bot_position == bot_position, axis=1)
-        #     valid_bots_positions = jnp.where(mask_self[:, None], jnp.inf, all_bots_positions)
+        def find_nearest_bot() -> JaxArray[3]:
+            # Exclude the current bot from the distance calculation
+            mask_self = jnp.all(all_bots_positions == bot_position, axis=1)
+            valid_bots_positions = jnp.where(mask_self[:, None], jnp.inf, all_bots_positions)
     
-        #     # Calculate distances to all other bots
-        #     distances_to_bots = jnp.linalg.norm(valid_bots_positions - bot_position, axis=1)
+            # Calculate distances to all other bots
+            distances_to_bots = jnp.linalg.norm(valid_bots_positions - bot_position, axis=1)
     
-        #     # Find the nearest bot
-        #     nearest_bot_idx = jnp.argmin(distances_to_bots)
-        #     nearest_bot = valid_bots_positions[nearest_bot_idx]
+            # Find the nearest bot
+            nearest_bot_idx = jnp.argmin(distances_to_bots)
+            nearest_bot = valid_bots_positions[nearest_bot_idx]
     
-        #     # Return relative distance and orientation
-        #     return nearest_bot
+            # Return relative distance and orientation
+            return nearest_bot
 
-        # nearest_bot = find_nearest_bot()
+        nearest_bot = find_nearest_bot()
         
-        #         bot_distance = jnp.array([
-        #     nearest_bot[0] - bot_position[0],
-        #     nearest_bot[1] - bot_position[1],
-        #     normalize_angles(jnp.arctan2(
-        #         nearest_bot[1] - bot_position[1],
-        #         nearest_bot[0] - bot_position[0]
-        #     ) - bot_orientation)
-        # ])
+        bot_distance = jnp.array([
+            nearest_bot[0] - bot_position[0],
+            nearest_bot[1] - bot_position[1],
+            normalize_angles(jnp.arctan2(
+                nearest_bot[1] - bot_position[1],
+                nearest_bot[0] - bot_position[0]
+            ) - bot_orientation)
+        ])
 
         nearest_apples, nearest_basket = find_nearest_objects()
 
@@ -393,8 +394,40 @@ class IntermediateObserver(BasicObserver):
                 ) - bot_orientation)  # Orientation difference to the basket
             ])
 
-        return jnp.concatenate([apple_distances.flatten(), basket_distance])
-                       
+        return jnp.concatenate([apple_distances.flatten(), basket_distance, bot_distance])
+
+    def state_to_observation(self, state: ComplexOrchardState) -> ComplexOrchardObservation:
+        """
+        Convert the current state of the environment into observations for all agents.
+    
+        Args:
+            state (State): The current state containing agent and food information.
+    
+        Returns:
+            Observation: An Observation object containing the agents' views, action masks,
+            and step count for all agents.
+        """
+    
+        num_agents = len(state.bots.diameter)
+    
+        # Placeholder for the agents' views
+        agents_view: JaxArray['num_agents', 3] = jax.vmap(self._observe, in_axes=(0, 0, 0, 0, None, None, None, None, None))(
+          state.bots.position,
+          state.bots.orientation,
+          state.bots.job,
+          state.bots.holding,
+          state.apples.position,
+          state.apples.held,
+          state.apples.collected,
+          state.baskets.position,
+          state.bots.position
+        )
+    
+        # Placeholder for the action mask
+        action_mask = self._create_action_mask(state)
+    
+        return ComplexOrchardObservation(agents_view=agents_view, action_mask=action_mask, step_count=state.step_count)
+                           
     def observation_spec(self, time_limit: int) -> specs.Spec[ComplexOrchardObservation]:
         """
         Returns the observation spec for the environment
@@ -404,7 +437,7 @@ class IntermediateObserver(BasicObserver):
           ComplexOrchardObservation,
           "ComplexOrchardObservationSpec",
           agents_view=specs.BoundedArray(
-            shape=(self.num_agents, 6),
+            shape=(self.num_agents, 9),
             dtype=jnp.float32,
             minimum=-jnp.inf,
             maximum=jnp.inf,
