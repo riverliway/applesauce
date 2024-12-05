@@ -42,7 +42,7 @@ ROBOT_MOVE_SPEED = 30 / TICK_SPEED
 # The speed of the robot in radians per tick
 ROBOT_TURN_SPEED = 60 * jnp.pi / 180 / TICK_SPEED
 # The distance the bot can be from the apple or bot to interact with it
-ROBOT_INTERACTION_DISTANCE = 20
+ROBOT_INTERACTION_DISTANCE = 5
 
 # Baskets
 BASKET_DIAMETER = 100
@@ -55,3 +55,5 @@ REWARD_BAD_DROP = -0.1
 REWARD_PICK_APPLE = 5
 REWARD_COLLECT_APPLE = 20
 REWARD_DROPPED_APPLE = -7
+REWARD_NOOPING = -1
+REWARD_COLLIDING = -3

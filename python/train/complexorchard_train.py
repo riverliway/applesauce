@@ -201,7 +201,7 @@ register(
 )
 
 print(f"Registered orchard version: {orchard_version_name}")
-render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=render_time_limit, verbose=False)
+render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=render_time_limit, verbose=True)
 
 print("Generating GIF. . . ")
 generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")

@@ -27,10 +27,12 @@ from jumanji_env.environments.complex_orchard.constants import (
   REWARD_COLLECT_APPLE,
   REWARD_COST_OF_STEP,
   REWARD_PICK_APPLE,
-  REWARD_DROPPED_APPLE
+  REWARD_DROPPED_APPLE,
+  REWARD_COLLIDING,
+  REWARD_NOOPING
 )
 from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
-from jumanji_env.environments.complex_orchard.observer import BasicObserver
+from jumanji_env.environments.complex_orchard.observer import BasicObserver, IntermediateObserver
 from jumanji_env.environments.complex_orchard.utils import bots_possible_moves, are_intersecting, distances_between_entities, are_any_intersecting
 from jumanji_env.environments.complex_orchard.orchard_types import ComplexOrchardApple, ComplexOrchardObservation, ComplexOrchardState, ComplexOrchardEntity, ComplexOrchardBot
 
@@ -71,7 +73,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         self.normalize_reward = normalize_reward
         self.penalty = penalty
 
-        self._observer = BasicObserver(
+        self._observer = IntermediateObserver(
             fov=self.fov,
             num_agents = self.num_agents,
             width=self.width,
@@ -118,13 +120,13 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             `TimeStep` object corresponding the timestep returned by the environment.
         """
         # Perform the actions for the bots
-        new_bot_positions, did_collide = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
+        new_bot_positions, out_of_bounds, any_collisions = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
         new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
         new_holding, new_held, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
         new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
         
         # Calculate the reward for each bot
-        reward = self.get_reward(did_collide, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop)
+        reward = self.get_reward(out_of_bounds, any_collisions, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop, actions)
 
         # Update the state
         new_bots = jax.vmap(ComplexOrchardBot)(
@@ -205,7 +207,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         and a boolean array indicating if the bot tried to collide with something. Shape: (num_bots,)
         """
 
-        possible_moves: JaxArray['num_bots', 2, 3] = bots_possible_moves(state)
+        possible_moves, out_of_bounds, any_collisions = bots_possible_moves(state)
 
         # If the bot is even capable of moving to that location
         can_forwards: JaxArray['num_bots'] = possible_moves[:, 0, 2] > 0.5
@@ -252,9 +254,10 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         new_positions: JaxArray['num_bots', 2] = updater(is_intersecting_other_bots, state.bots.position, new_positions)
 
         # Calculate if the bots collided or if they tried to run into something
-        did_collide: JaxArray['num_bots'] = is_intersecting_other_bots | (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
+        
+        did_collide: JaxArray['num_bots'] = (move_forwards_mask & ~can_forwards) | (move_backwards_mask & ~can_backwards)
 
-        return new_positions, did_collide
+        return new_positions, out_of_bounds, any_collisions
     
     def _perform_turn(
         self,
@@ -521,30 +524,36 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
     def get_reward(
         self,
-        did_collide: JaxArray['num_bots'],
+        out_of_bounds: JaxArray['num_bots'],
+        any_collisions: JaxArray['num_bots'],
         did_try_bad_pick: JaxArray['num_bots'],
         did_try_bad_drop: JaxArray['num_bots'],
         did_pick_apple: JaxArray['num_bots'],
         did_collect_apple: JaxArray['num_bots'],
-        did_bad_apple_drop: JaxArray['num_bots']
+        did_bad_apple_drop: JaxArray['num_bots'],
+        actions: JaxArray['num_bots']
     ) -> JaxArray['num_bots']:
         """
         Calculates the reward for each bot
 
-        :param did_collide: A boolean for each bot indicating if they collided with something
+        :param out_of_bounds: A boolean for each bot indicating if they went out of bounds
         :param did_try_bad_pick: A boolean for each bot indicating if they tried to pick up an apple but failed
         :param did_try_bad_drop: A boolean for each bot indicating if they dropped an apple but not in a basket
         :param did_collect_apple: A boolean for each bot indicating if they successfully collected an apple
         :param did_bad_apple_drop: A boolean for each bot indicating if had an apple and then dropped it somewhere other than the basket
+        :param actions: The actions taken by each bot
         """
         
         reward = REWARD_COST_OF_STEP
-        reward += did_collide * REWARD_OUT_OF_BOUNDS
+        reward += out_of_bounds * REWARD_OUT_OF_BOUNDS
+        reward += any_collisions * REWARD_COLLIDING
         reward += did_try_bad_pick * REWARD_BAD_PICK
         reward += did_try_bad_drop * REWARD_BAD_DROP
         reward += did_pick_apple * REWARD_PICK_APPLE
         reward += did_bad_apple_drop * REWARD_DROPPED_APPLE
         reward += did_collect_apple * REWARD_COLLECT_APPLE
+        reward += actions == NOOP * 
+        
 
         return reward
  
