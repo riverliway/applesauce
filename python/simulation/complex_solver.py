@@ -6,6 +6,8 @@ class ComplexSolver:
     # The environment to make decisions for
     self.environment = environment
 
+    self.verbose = False
+
     # The targets for each bot to move towards. The index is None if there is no curent target (will find one in the next step)
     self.targets = [{
       'type': 'apple',
@@ -21,7 +23,7 @@ class ComplexSolver:
     self.__astar_grid_storage = None
     self.__astar_grid_storage_scale = 10
   
-  def make_decisions(self):
+  def make_decisions(self) -> list[str]:
     """
     Makes a decision for each bot based on the current environment,
     then executes those decisions and returns the new state of the environment.
@@ -32,11 +34,7 @@ class ComplexSolver:
     for bot_index in range(len(self.environment.bots)):
       decisions[bot_index] = self.__make_decision(bot_index)
 
-    print(decisions)
-
-    self.environment.step(decisions)
-
-    return self.environment
+    return decisions
 
   def __make_decision(self, bot_index: int) -> str:
     """
@@ -55,7 +53,8 @@ class ComplexSolver:
     bot = self.environment.bots[bot_index]
     
     # If the bot is next to an apple, pick it up
-    if bot['holding'] is None and self.environment.try_pick(bot_index) is not None:
+    is_holding = bot['holding'] is not None
+    if not is_holding and self.environment.try_pick(bot_index) is not None:
       self.rough_paths[bot_index] = None
       self.targets[bot_index] = {
         'type': 'basket',
@@ -64,7 +63,7 @@ class ComplexSolver:
       return 'pick'
 
     # If the bot is holding an apple next to a basket, drop it
-    if bot['holding'] is not None and self.environment.can_drop(bot_index) is not None:
+    if is_holding and self.environment.can_drop(bot_index) is not None:
       self.rough_paths[bot_index] = None
       self.targets[bot_index] = {
         'type': 'apple',
@@ -135,12 +134,12 @@ class ComplexSolver:
     :return: [str] the action to take.
     """
     goal = self.__get_goal_coords(bot_idx, target)
-    print(goal)
-    # print(self.__create_astar_grid(bot_idx, 10))
-    print((self.environment.bots[bot_idx]['x'], self.environment.bots[bot_idx]['y']))
+    self.__print(goal)
+    # self.__print(self.__create_astar_grid(bot_idx, 10))
+    self.__print((self.environment.bots[bot_idx]['x'], self.environment.bots[bot_idx]['y']))
 
     nose_x, nose_y = self.__get_nose(bot_idx)
-    print((nose_x, nose_y))
+    self.__print((nose_x, nose_y))
 
     # Find the angle from the bot to the goal [0, 2pi]
     goal_angle = (math.atan2(goal[1] - self.environment.bots[bot_idx]['y'], goal[0] - self.environment.bots[bot_idx]['x']) + 2 * math.pi) % (2 * math.pi)
@@ -192,7 +191,7 @@ class ComplexSolver:
       if self.rough_paths[bot_idx] is None:
         self.rough_paths[bot_idx] = []
 
-    print(self.rough_paths[bot_idx])
+    self.__print(self.rough_paths[bot_idx])
     
     # Check to see if the bot has arrived at the first point in the path
     if len(self.rough_paths[bot_idx]) > 0:
@@ -227,10 +226,10 @@ class ComplexSolver:
     """
 
     scale = 10
-    print(f'Running A* with scale {scale}')
+    self.__print(f'Running A* with scale {scale}')
     path = self.__astar_grid(bot_idx, target, scale)
     if path is not None:
-      print([*path, (self.environment.apples[target['index']]['x'], self.environment.apples[target['index']]['y'])])
+      self.__print([*path, (self.environment.apples[target['index']]['x'], self.environment.apples[target['index']]['y'])])
       return path
       
     return None
@@ -250,11 +249,11 @@ class ComplexSolver:
     grid = self.__create_astar_grid(bot_idx, scale)
     
     goal = (int(target_object['x'] / scale), int(target_object['y'] / scale))
-    print(goal)
+    self.__print(goal)
     goal_positions = self.__find_closest_valid_goal_positions(grid, (target_object['x'], target_object['y']), scale)    
-    print(goal_positions)
+    self.__print(goal_positions)
     start = self.__find_closest_valid_goal_positions(grid, self.__get_nose(bot_idx), scale)
-    print(start)
+    self.__print(start)
 
     def find_neighbors(loc):
       if loc in goal_positions:
@@ -430,6 +429,10 @@ class ComplexSolver:
       bot['x'] + math.cos(bot['orientation']) * bot['diameter'] / 2,
       bot['y'] + math.sin(bot['orientation']) * bot['diameter'] / 2
     )
+
+  def __print(self, something):
+    if self.verbose:
+      self.__print(something)
   
   @staticmethod
   def angle_difference(angle1: float, angle2: float) -> float:

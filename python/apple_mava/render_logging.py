@@ -16,7 +16,7 @@ from colorama import Fore, Style  # For colored terminal output
 from apple_mava.ff_networks import Actor
 from jumanji_env.environments.simple_orchard.custom_mava import make_env
 from jumanji_env.environments.complex_orchard.custom_mava import make_env as make_complex_env
-from jumanji_env.environments.complex_orchard.constants import TICK_SPEED
+from apple_mava.log_dicts import create_complex_dict
 
 def render_one_episode_simple(orchard_version_name, config, params, max_steps, verbose=True) -> None:
     """Simulates and visualises one episode from rolling out a trained MAPPO model that will be passed to the function using actors_params."""
@@ -164,79 +164,12 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
 
     state_dicts = []
     for state in states:
-      record = create_complex_dict(state, config.system.seed)
+      record = create_complex_dict(state.env_state, config.system.seed)
       state_dicts.append(record)
     # Render the episode
     ##### Commenting out the rendering and returning the states. 
     # env.animate(states=states, interval=100, save_path="./applesauce.gif")
     return state_dicts
-
-def create_complex_dict(state, seed) -> dict:
-    """
-    Creates a dictionary from the state object.
-    """
-
-    bots = [{
-        "x": position[0],
-        "y": position[1],
-        "diameter": diameter,
-        "holding": holding,
-        "job": 'picker' if job < 0.5 else 'pusher',
-        "orientation": orientation
-    }
-    for position, orientation, holding, job, diameter in zip(
-        state.env_state.bots.position.tolist(),
-        state.env_state.bots.orientation.tolist(),
-        state.env_state.bots.holding.tolist(),
-        state.env_state.bots.job.tolist(),
-        state.env_state.bots.diameter.tolist(),
-    )]
-
-    trees = [{
-        "x": position[0],
-        "y": position[1],
-        "diameter": diameter
-    }
-    for position, diameter in zip(
-        state.env_state.trees.position.tolist(),
-        state.env_state.trees.diameter.tolist()
-    )]
-
-    baskets = [{
-        "x": position[0],
-        "y": position[1],
-        "diameter": diameter
-    }
-    for position, diameter in zip(
-        state.env_state.baskets.position.tolist(),
-        state.env_state.baskets.diameter.tolist()
-    )]
-
-    apples = [{
-        "x": position[0],
-        "y": position[1],
-        "diameter": diameter,
-        "held": held,
-        "collected": collected
-    }
-    for position, diameter, held, collected in zip(
-        state.env_state.apples.position.tolist(),
-        state.env_state.apples.diameter.tolist(),
-        state.env_state.apples.held.tolist(),
-        state.env_state.apples.collected.tolist()
-    )]
-
-    return {
-        "width": state.env_state.width,
-        "height": state.env_state.height,
-        "seed": seed,
-        "time": state.env_state.step_count,
-        "bots": bots,
-        "trees": trees,
-        "baskets": baskets,
-        "apples": apples,
-        "TICK_SPEED": TICK_SPEED
-    }
 
 def plot_performance(mean_episode_return, ep_returns, start_time, config, save=False):
     """visualises the performance of the algorithm. This plot will be refreshed each time evaluation interval happens."""

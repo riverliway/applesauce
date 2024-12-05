@@ -47,7 +47,7 @@ export const OrchardComplex: React.FC<OrchardComplexProps> = props => {
           <div className='bg-black' style={{ width: 2 / props.scale, height: bot.diameter / props.scale / 2 }} />
         </div>
       ))}
-      {props.data.bots.filter(b => b.holding !== undefined && b.holding !== null).map((bot, i) => {
+      {props.data.bots.filter(b => b.holding !== undefined && b.holding !== null && b.holding != -1).map((bot, i) => {
         const apple = props.data.apples[bot.holding as number]
         const noseX = bot.x + Math.cos(bot.orientation) * bot.diameter / 2
         const noseY = bot.y + Math.sin(bot.orientation) * bot.diameter / 2

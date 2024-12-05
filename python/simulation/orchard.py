@@ -338,7 +338,7 @@ class OrchardComplex2D:
     nearby_targets = [
       i
       for (i, target) in enumerate(self.baskets if bot['job'] == 'pusher' else self.apples)
-      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= (bot['diameter'] + target['diameter']) / 2
+      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= 20
         and not target['held']
     ]
 
@@ -365,7 +365,7 @@ class OrchardComplex2D:
     nearby_targets = [
       i
       for (i, target) in enumerate(self.baskets)
-      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= (bot['diameter'] + target['diameter']) / 2
+      if self.distance(target['x'], target['y'], bot_nose_x, bot_nose_y) <= 19 + target['diameter'] / 2
         and not target['held']
     ]
 

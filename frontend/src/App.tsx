@@ -6,20 +6,20 @@ import { ErrorPage } from './components/Error/ErrorPage'
 import { Page404 } from './components/Error/Page404'
 import { Playground } from './components/Home/Playground'
 import { WebsocketProvider } from './context/WSContext'
+import { Playback } from './components/Home/Playback'
 
 /**
  * The main component that wraps the entire application
  */
 const App: React.FC = () => {
   return (
-    <WebsocketProvider>
-        <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<Safe><Playground /></Safe>} />
-          <Route path='*' element={<Safe><Page404 /></Safe>} />
-        </Routes>
-      </BrowserRouter>
-    </WebsocketProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path='/playback' element={<Safe><Playback /></Safe>} />
+        <Route path='/' element={<Safe><WebsocketProvider><Playground /></WebsocketProvider></Safe>} />
+        <Route path='*' element={<Safe><Page404 /></Safe>} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
