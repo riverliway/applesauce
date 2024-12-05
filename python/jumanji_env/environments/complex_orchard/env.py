@@ -30,7 +30,8 @@ from jumanji_env.environments.complex_orchard.constants import (
   REWARD_PICK_APPLE,
   REWARD_DROPPED_APPLE,
   REWARD_COLLIDING,
-  REWARD_NOOPING
+  REWARD_NOOPING,
+  REWARD_HOARDING
 )
 from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
 from jumanji_env.environments.complex_orchard.observer import BasicObserver, IntermediateObserver
@@ -127,7 +128,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
         
         # Calculate the reward for each bot
-        reward = self.get_reward(out_of_bounds, any_collisions, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop, actions)
+        reward = self.get_reward(out_of_bounds, any_collisions, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop, actions, state.bots.holding)
 
         # Update the state
         new_bots = jax.vmap(ComplexOrchardBot)(
@@ -532,7 +533,8 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         did_pick_apple: JaxArray['num_bots'],
         did_collect_apple: JaxArray['num_bots'],
         did_bad_apple_drop: JaxArray['num_bots'],
-        actions: JaxArray['num_bots']
+        actions: JaxArray['num_bots'],
+        holding: JaxArray['num_bots']
     ) -> JaxArray['num_bots']:
         """
         Calculates the reward for each bot
@@ -543,6 +545,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         :param did_collect_apple: A boolean for each bot indicating if they successfully collected an apple
         :param did_bad_apple_drop: A boolean for each bot indicating if had an apple and then dropped it somewhere other than the basket
         :param actions: The actions taken by each bot
+        :param holding: A boolean for each bot indicating if they are holding an apple
         """
         
         reward = REWARD_COST_OF_STEP
@@ -554,8 +557,8 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         reward += did_bad_apple_drop * REWARD_DROPPED_APPLE
         reward += did_collect_apple * REWARD_COLLECT_APPLE
         reward += (actions == NOOP) * REWARD_NOOPING
+        reward += (holding != -1) * REWARD_HOARDING
         
-
         return reward
  
     def observation_spec(self) -> specs.Spec[Observation]:
