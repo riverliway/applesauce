@@ -6,6 +6,8 @@ from typing import Dict, Optional, Tuple, Any
 import chex
 import jax
 import jax.numpy as jnp
+import os
+import importlib.util
 
 ### NEED TO UPDATE FOR OUR CODE ###
 # from our modified files
@@ -22,17 +24,22 @@ from jumanji_env.environments.complex_orchard.constants import (
   DROP,
   NOOP,
   APPLE_DIAMETER,
-  REWARD_OUT_OF_BOUNDS,
-  REWARD_BAD_PICK,
-  REWARD_BAD_DROP,
-  REWARD_COLLECT_APPLE,
-  REWARD_COST_OF_STEP,
-  REWARD_PICK_APPLE,
-  REWARD_DROPPED_APPLE,
-  REWARD_COLLIDING,
-  REWARD_NOOPING,
-  REWARD_HOARDING
 )
+
+from train.config import config
+
+# assign rewards from config file
+REWARD_COST_OF_STEP = config["rewards"]["REWARD_COST_OF_STEP"]
+REWARD_OUT_OF_BOUNDS = config["rewards"]["REWARD_OUT_OF_BOUNDS"]
+REWARD_BAD_PICK = config["rewards"]["REWARD_BAD_PICK"]
+REWARD_BAD_DROP = config["rewards"]["REWARD_BAD_DROP"]
+REWARD_PICK_APPLE = config["rewards"]["REWARD_PICK_APPLE"]
+REWARD_COLLECT_APPLE = config["rewards"]["REWARD_COLLECT_APPLE"]
+REWARD_DROPPED_APPLE = config["rewards"]["REWARD_DROPPED_APPLE"]
+REWARD_NOOPING = config["rewards"]["REWARD_NOOPING"]
+REWARD_COLLIDING = config["rewards"]["REWARD_COLLIDING"]
+REWARD_HOARDING = config["rewards"]["REWARD_HOARDING"]
+
 from jumanji_env.environments.complex_orchard.generator import ComplexOrchardGenerator
 from jumanji_env.environments.complex_orchard.observer import BasicObserver, IntermediateObserver
 from jumanji_env.environments.complex_orchard.utils import bots_possible_moves, are_intersecting, distances_between_entities, are_any_intersecting
