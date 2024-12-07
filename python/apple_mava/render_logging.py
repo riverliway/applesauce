@@ -155,8 +155,12 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
             print("-"*70)
 
     # Print out the results of the episode
+    apples_collected = sum(state.env_state.apples.collected.tolist())
+    print(f"{Fore.CYAN}{Style.BRIGHT}APPLES COLLECTED:{apples_collected}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}{Style.BRIGHT}% COLLECTED:{apples_collected/(len(apple_locations))}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{Style.BRIGHT}EPISODE RETURN: {episode_return}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{Style.BRIGHT}EPISODE LENGTH:{episode_length}{Style.RESET_ALL}")
+    
 
     # Limit the number of steps to record to the maximum number of steps
     steps = min([max_steps, len(states) - 1])

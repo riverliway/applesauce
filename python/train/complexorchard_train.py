@@ -17,6 +17,7 @@ import sys
 import importlib
 import inspect
 import time
+import json
 from IPython.display import Image, display
 from flax.training import checkpoints
 
@@ -83,7 +84,7 @@ register(
     },
 )
 
-print(f"Registered orchard version: {orchard_version_name}")
+print(f"Registered orchard version for training: {orchard_version_name}")
 
 # make the training and evaluation orchards
 env, eval_env = make_env(orchard_version_name, config, add_global_state=True)
@@ -200,9 +201,32 @@ register(
     },
 )
 
-print(f"Registered orchard version: {orchard_version_name}")
+print(f"Registered orchard version for rendering: {orchard_version_name}")
+
+print("Plotting episode steps and creating JSON output.")
+
+# creating a plot for each step and compling a JSON output of the episode
 render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=render_time_limit, verbose=True)
 
-print("Generating GIF. . . ")
-generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
+# saving the JSON output of the episode for frontend use
+with open(f'attempts/{readable_time}/render_json.txt', 'w') as convert_file:
+    convert_file.write(json.dumps(render_data))
+    
+# print("Generating GIF. . . ")
+# # compiling the plotted steps into a gif and saving. 
+# generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
+
+print("Saving JSON of config . . .")
+# Converting OmegaConf back to basic python dictionary so it is serializable for JSON.
+resolved_config = OmegaConf.to_container(config, resolve=True)
+
+# Saving the config/rewards dictionary to the attemps folder.
+with open(f'attempts/{readable_time}/config_and_rewards.txt', 'w') as convert_file:
+    convert_file.write(json.dumps(resolved_config))
+
+# print("Copying output to Google Drive . . .")
+# shutil.copytree(f"attempts/{readable_time}/", f"/home/ubuntu/drive/DATASCI210 - Capstone Team Folder/Training Outputs/Grid Search/{readable_time}/", dirs_exist_ok=False)
+
 print("Script Complete!")
+
+
