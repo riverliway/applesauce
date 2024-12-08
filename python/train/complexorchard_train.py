@@ -112,7 +112,7 @@ steps_per_rollout, config = compute_total_timesteps(config)
 ep_returns = []
 start_time = time.time()
 readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
-output_directory = f"/home/ubuntu/applesauce/python/train/attempts/{readable_time}"
+output_directory = f"/home/ubuntu/applesauce/python/train/attempts/{NAME}_{INSTANCE}_{readable_time}"
 os.makedirs(output_directory, exist_ok=False)
 
 n_devices = len(jax.devices())
@@ -143,7 +143,7 @@ for _ in range(config["arch"]["num_evaluation"]):
 
     mean_episode_return = jnp.mean(evaluator_output["episode_return"])
     if _ == (config["arch"]["num_evaluation"]-1):
-        ep_returns = plot_performance(mean_episode_return, ep_returns, start_time, config, save=True)
+        ep_returns = plot_performance(mean_episode_return, ep_returns, start_time, config, save=True, name=NAME, instance=INSTANCE)
     else:
         ep_returns = plot_performance(mean_episode_return, ep_returns, start_time, config)
 

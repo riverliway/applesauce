@@ -177,7 +177,7 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
     # env.animate(states=states, interval=100, save_path="./applesauce.gif")
     return state_dicts
 
-def plot_performance(mean_episode_return, ep_returns, start_time, config, save=False):
+def plot_performance(mean_episode_return, ep_returns, start_time, config, save=False, name="", instance=""):
     """visualises the performance of the algorithm. This plot will be refreshed each time evaluation interval happens."""
     
     plt.figure(figsize=(8, 4))
@@ -198,7 +198,7 @@ def plot_performance(mean_episode_return, ep_returns, start_time, config, save=F
     # Show the plot
     if save:
         readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
-        plt.savefig(f"attempts/{readable_time}/evaluation_plot_{readable_time}")
+        plt.savefig(f"attempts/{name}_{instance}_{readable_time}/evaluation_plot")
     else:
         plt.show()
         print(f"Episode {len(ep_returns)} Return: {mean_episode_return},   Time: {(time.time() - start_time)}")         
