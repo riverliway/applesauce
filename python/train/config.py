@@ -1,11 +1,11 @@
 # configuration for environment and models
 config = {
     "system": {
-        "use_baseline": true,
-        "actor_lr": 0.0001,
-        "critic_lr": 0.0001,
+        "use_baseline": False,
+        "actor_lr": 0.00025,
+        "critic_lr": 0.00025,
         "update_batch_size": 2,
-        "rollout_length": 256,
+        "rollout_length": 128,
         "num_updates": 400,
         "ppo_epochs": 16,
         "num_minibatches": 32,
@@ -15,24 +15,24 @@ config = {
         "ent_coef": 0.01,
         "vf_coef": 0.5,
         "max_grad_norm": 0.5,
-        "add_agent_id": true,
-        "decay_learning_rates": false,
+        "add_agent_id": True,
+        "decay_learning_rates": False,
         "seed": 42
     },
     "arch": {
         "num_envs": 512,
         "num_eval_episodes": 32,
-        "num_evaluation": 30,
-        "evaluation_greedy": false,
+        "num_evaluation": 200,
+        "evaluation_greedy": False,
         "num_absolute_metric_eval_episodes": 32,
-        "use_individual_rewards": false
+        "use_individual_rewards": False
     },
     "env": {
         "eval_metric": "episode_return",
-        "implicit_agent_id": false,
-        "log_win_rate": false,
-        "render_time_limit": 15,
-        "train_time_limit": 15,
+        "implicit_agent_id": False,
+        "log_win_rate": False,
+        "render_time_limit": 1500,
+        "train_time_limit": 1500,
         "scenario": {
             "task_config": {
                 "width": 500,

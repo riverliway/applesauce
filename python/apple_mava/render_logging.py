@@ -283,11 +283,23 @@ def visualize_step(data, step_index, save_path):
         ax.add_patch(basket_circle)
     
     # Plot apples
+    total_apples = len(data['apples'])
+    collected_apples = sum(1 for apple in data['apples'] if apple['collected'])
     for apple in data['apples']:
         color = 'red' if apple['collected'] else 'yellow' if apple['held'] else 'brown'
         apple_circle = plt.Circle((apple['x'], apple['y']), apple['diameter'] / 2, color=color, alpha=0.6, label='Apple')
         ax.add_patch(apple_circle)
 
+    # Annotate running totals
+    ax.text(
+        0.5, -0.1, 
+        f"Apples Collected: {collected_apples}/{total_apples}", 
+        transform=ax.transAxes, 
+        fontsize=12, 
+        ha='center', 
+        color='black'
+    )
+    
     # Avoid duplicate labels
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
