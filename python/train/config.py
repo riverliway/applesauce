@@ -5,7 +5,7 @@ config = {
         "actor_lr": 0.00025,
         "critic_lr": 0.00025,
         "update_batch_size": 2,
-        "rollout_length": 128,
+        "rollout_length": 256,
         "num_updates": 400,
         "ppo_epochs": 16,
         "num_minibatches": 32,
@@ -31,7 +31,7 @@ config = {
         "eval_metric": "episode_return",
         "implicit_agent_id": False,
         "log_win_rate": False,
-        "render_time_limit": 1500,
+        "render_time_limit": 300,
         "train_time_limit": 1500,
         "scenario": {
             "task_config": {

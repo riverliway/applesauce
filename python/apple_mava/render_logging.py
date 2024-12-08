@@ -145,6 +145,7 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
         states.append(state)
         episode_return += jnp.mean(timestep.reward)
         episode_length += 1
+        apples_collected = sum(state.env_state.apples.collected.tolist())
         if verbose:
             print("Action:", action)
             print("Bot Location After:", state.env_state.bots.position.tolist())
@@ -155,7 +156,8 @@ def render_one_episode_complex(orchard_version_name, config, params, max_steps, 
             print("-"*70)
 
     # Print out the results of the episode
-    apples_collected = sum(state.env_state.apples.collected.tolist())
+    second_last_state = states[-2] if len(states) > 1 else states[0]
+    apples_collected = sum(second_last_state.env_state.apples.collected.tolist())
     print(f"{Fore.CYAN}{Style.BRIGHT}APPLES COLLECTED:{apples_collected}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{Style.BRIGHT}% COLLECTED:{apples_collected/(len(apple_locations))}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{Style.BRIGHT}EPISODE RETURN: {episode_return}{Style.RESET_ALL}")

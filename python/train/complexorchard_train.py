@@ -35,6 +35,7 @@ from apple_mava.ff_networks import Actor, Critic
 from apple_mava.render_logging import *
 from apple_mava.ff_mappo import *
 from config import config
+from name_ami import NAME, INSTANCE
 
 # this is a workaround to get python to call the correct make_env. It was pulling the simple version first.
 importlib.reload(custom_mava)
@@ -177,7 +178,7 @@ def table_episode_metrics(data):
   return df
 
 table = table_episode_metrics(data)
-table.to_csv(f'attempts/{readable_time}/episode_metrics_{readable_time}.csv', index=False)
+table.to_csv(f'attempts/{NAME}_{INSTANCE}_{readable_time}/episode_metrics.csv', index=False)
 
 
 print("Executing render episode . . .")
@@ -209,23 +210,23 @@ print("Plotting episode steps and creating JSON output.")
 render_data = render_one_episode_complex(orchard_version_name, config, actor_params, max_steps=render_time_limit, verbose=True)
 
 # saving the JSON output of the episode for frontend use
-with open(f'attempts/{readable_time}/render_json.txt', 'w') as convert_file:
+with open(f'attempts/{NAME}_{INSTANCE}_{readable_time}/render_json.txt', 'w') as convert_file:
     convert_file.write(json.dumps(render_data))
     
 print("Generating GIF. . . ")
 # compiling the plotted steps into a gif and saving. 
-generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
+generate_gif(render_data, f"attempts/{NAME}_{INSTANCE}_{readable_time}/rendered_episode.gif")
 
 print("Saving JSON of config . . .")
 # Converting OmegaConf back to basic python dictionary so it is serializable for JSON.
 resolved_config = OmegaConf.to_container(config, resolve=True)
 
 # Saving the config/rewards dictionary to the attemps folder.
-with open(f'attempts/{readable_time}/config_and_rewards.txt', 'w') as convert_file:
+with open(f'attempts/{NAME}_{INSTANCE}_{readable_time}/config_and_rewards.txt', 'w') as convert_file:
     convert_file.write(json.dumps(resolved_config))
 
 print("Copying output to Google Drive . . .")
-shutil.copytree(f"attempts/{readable_time}/", f"/home/ubuntu/drive/DATASCI210 - Capstone Team Folder/Training Outputs/Grid Search/{readable_time}/", dirs_exist_ok=False)
+shutil.copytree(f"attempts/{NAME}_{INSTANCE}_{readable_time}/", f"/home/ubuntu/drive/DATASCI210 - Capstone Team Folder/Training Outputs/Grid Search/{NAME}_{INSTANCE}_{readable_time}/", dirs_exist_ok=False)
 
 print("Script Complete!")
 
