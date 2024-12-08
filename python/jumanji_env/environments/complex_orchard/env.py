@@ -299,6 +299,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         # Perform the pickup action
         nearest_apple_id: JaxArray['num_bots'] = self._nearest_apple(state)
+
         nose: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
         
         def is_close_check(nearest_apple_id: int, bot_nose: JaxArray[2]) -> bool:
@@ -320,7 +321,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         is_close: JaxArray['num_bots'] = jax.vmap(is_close_check)(nearest_apple_id, nose)
                                             
-        can_pick: JaxArray['num_bots'] = is_close & (state.bots.holding == -1) & pick_mask
+        can_pick: JaxArray['num_bots'] = is_close & (state.bots.holding == -1) & pick_mask & (~state.apples.collected[nearest_apple_id]) & (~new_collected[nearest_apple_id])
 
         def update_holding(can_pick: bool, nearest_apple_id: int, existing_holding: int) -> int:
             """
@@ -436,9 +437,16 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             )
 
         apple_ids_dropped_near_baskets: JaxArray['num_bots'] = jax.vmap(lambda near, id: jax.lax.cond(near, lambda: id, lambda: -1))(is_near_basket & can_drop, new_holding)
+        
         new_collected: JaxArray['num_apples'] = jax.vmap(update_collected, in_axes=(0, 0, None))(state.apples.id, state.apples.collected, apple_ids_dropped_near_baskets)
 
-        new_holding: JaxArray['num_bots'] = jax.vmap(lambda can_drop, holding: jax.lax.cond(can_drop, lambda: -1, lambda: holding))(can_drop, new_holding)
+        new_holding: JaxArray['num_bots'] = jax.vmap(
+            lambda can_drop, holding: jax.lax.cond(
+                can_drop, 
+                lambda: -1, 
+                lambda: holding
+            )
+        )(can_drop, new_holding)
 
         def update_held(id: int, currently_held: bool, new_holding: JaxArray['num_bots']) -> bool:
             """
@@ -469,7 +477,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         If there are no apples, then the id is -1.
         """
 
-        is_apple_valid: JaxArray['num_apples'] = (~state.apples.held) & (~state.apples.collected)
+        is_apple_valid: JaxArray['num_apples'] = (~state.apples.held) & (~state.apples.collected) & (~new_collected)
 
         # Calculate the bot's nose position because we want to find the closest apple to the nose
         nose_positions: JaxArray['num_bots', 2] = self._calculate_bot_nose(state)
