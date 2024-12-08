@@ -212,9 +212,9 @@ render_data = render_one_episode_complex(orchard_version_name, config, actor_par
 with open(f'attempts/{readable_time}/render_json.txt', 'w') as convert_file:
     convert_file.write(json.dumps(render_data))
     
-# print("Generating GIF. . . ")
-# # compiling the plotted steps into a gif and saving. 
-# generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
+print("Generating GIF. . . ")
+# compiling the plotted steps into a gif and saving. 
+generate_gif(render_data, f"attempts/{readable_time}/rendered_episode_{readable_time}.gif")
 
 print("Saving JSON of config . . .")
 # Converting OmegaConf back to basic python dictionary so it is serializable for JSON.
@@ -224,8 +224,8 @@ resolved_config = OmegaConf.to_container(config, resolve=True)
 with open(f'attempts/{readable_time}/config_and_rewards.txt', 'w') as convert_file:
     convert_file.write(json.dumps(resolved_config))
 
-# print("Copying output to Google Drive . . .")
-# shutil.copytree(f"attempts/{readable_time}/", f"/home/ubuntu/drive/DATASCI210 - Capstone Team Folder/Training Outputs/Grid Search/{readable_time}/", dirs_exist_ok=False)
+print("Copying output to Google Drive . . .")
+shutil.copytree(f"attempts/{readable_time}/", f"/home/ubuntu/drive/DATASCI210 - Capstone Team Folder/Training Outputs/Grid Search/{readable_time}/", dirs_exist_ok=False)
 
 print("Script Complete!")
 

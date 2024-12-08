@@ -24,7 +24,10 @@ def load_config(file_path):
 def save_config(config, file_path):
     with open(file_path, "w") as file:
         file.write("# configuration for environment and models\n")
-        file.write(f"config = {json.dumps(config, indent=4)}\n")
+        config_str = json.dumps(config, indent=4)
+        # Replace lowercase JSON booleans with Python booleans
+        config_str = config_str.replace("true", "True").replace("false", "False")
+        file.write(f"config = {config_str}\n")
 
 # Get the parameter keys for grid search
 param_keys = grid_search_params.keys()
