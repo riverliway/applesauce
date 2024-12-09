@@ -129,9 +129,26 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         # Perform the actions for the bots
         new_bot_positions, out_of_bounds, any_collisions = self._perform_movement(state, actions == FORWARD, actions == BACKWARD)
         new_bot_orientations = self._perform_turn(state, actions == LEFT, actions == RIGHT)
-        new_holding, new_held, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
-        new_holding, new_held, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, new_held, actions == DROP)
+        new_holding, did_try_bad_pick, did_pick_apple = self._perform_pick(state, actions == PICK)
+        new_holding, new_collected, new_apple_position, did_try_bad_drop, did_collect_apple, did_bad_apple_drop = self._perform_drop(state, new_holding, actions == DROP)
         
+        # Update the apples' held flag based on the bot's holding index
+        def update_held(apple_id: int, holding: JaxArray['num_bots']) -> bool:
+            """
+            Updates the held state of the apples based on the holding index of the bots
+
+            :param apple_id: The id of the apple we're deciding the state for
+            :param holding: The holding index of the bots
+            """
+
+            return jax.lax.cond(
+                jnp.any(apple_id == holding),
+                lambda: True,
+                lambda: False
+            )
+
+        new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, None))(state.apples.id, new_holding)
+
         # Calculate the reward for each bot
         reward = self.get_reward(out_of_bounds, any_collisions, did_try_bad_pick, did_try_bad_drop, did_pick_apple, did_collect_apple, did_bad_apple_drop, actions, state.bots.holding)
 
@@ -287,14 +304,14 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         self,
         state: ComplexOrchardState,
         pick_mask: JaxArray['num_bots']
-    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_apples'], JaxArray['num_bots']]:
+    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_bots'], JaxArray['num_bots']]:
         """
         Performs the pick action for the bots.
 
         :param state: The current state of the environment
         :param pick_mask: A boolean for each bot indicating if they are picking up an apple
 
-        :return: The new state of the bots.holding, apples.held, the did_try_bad_pick boolean array, and a did_pick_apple boolean array
+        :return: The new state of the bots.holding, the did_try_bad_pick boolean array, and a did_pick_apple boolean array
         """
 
         # Perform the pickup action
@@ -341,33 +358,14 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
 
         new_holding: JaxArray['num_bots'] = jax.vmap(update_holding)(can_pick, nearest_apple_id, state.bots.holding)
 
-        def update_held(apple_id: int, held: bool, nearest_apple_id: JaxArray['num_bots'], can_pick: JaxArray['num_bots']) -> bool:
-            """
-            Updates the held state of the apples based on if they were picked up.
-
-            :param apple_id: The id of the apple we're deciding the state for
-            :param nearest_apple_id: The id of the nearest apple to each bot
-            :param held: The current state of the apples.held
-            :param can_pick: A boolean indicating if the bot can pick up the apple
-            """
-
-            return jax.lax.cond(
-                jnp.any((apple_id == nearest_apple_id) & can_pick),
-                lambda: True,
-                lambda: held
-            )
-
-        new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, 0, None, None))(state.apples.id, state.apples.held, nearest_apple_id, can_pick)
-
-        return new_holding, new_held, pick_mask & (~can_pick), pick_mask & can_pick
+        return new_holding, pick_mask & (~can_pick), pick_mask & can_pick
 
     def _perform_drop(
         self,
         state: ComplexOrchardState,
         new_holding: JaxArray['num_bots'],
-        new_held: JaxArray['num_apples'],
         drop_mask: JaxArray['num_bots']
-    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_apples'], JaxArray['num_apples'], JaxArray['num_apples', 2], JaxArray['num_bots'], JaxArray['num_bots']]:
+    ) -> Tuple[JaxArray['num_bots'], JaxArray['num_apples'], JaxArray['num_apples', 2], JaxArray['num_bots'], JaxArray['num_bots']]:
         """
         Performs the drop action for the bots.
 
@@ -376,7 +374,7 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
         :param new_held: The new state of the apples.held created by the _perform_pick function
         :param drop_mask: A boolean for each bot indicating if they are dropping an apple
 
-        :return: The new state of the bots.holding, apples.held, apples.collected, apples.position, did_try_bad_drop, did_collect_apple
+        :return: The new state of the bots.holding, apples.collected, apples.position, did_try_bad_drop, did_collect_apple
         """
 
         can_drop: JaxArray['num_bots'] = (new_holding != -1) & drop_mask
@@ -436,28 +434,12 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             )
 
         apple_ids_dropped_near_baskets: JaxArray['num_bots'] = jax.vmap(lambda near, id: jax.lax.cond(near, lambda: id, lambda: -1))(is_near_basket & can_drop, new_holding)
+
         new_collected: JaxArray['num_apples'] = jax.vmap(update_collected, in_axes=(0, 0, None))(state.apples.id, state.apples.collected, apple_ids_dropped_near_baskets)
 
         new_holding: JaxArray['num_bots'] = jax.vmap(lambda can_drop, holding: jax.lax.cond(can_drop, lambda: -1, lambda: holding))(can_drop, new_holding)
 
-        def update_held(id: int, currently_held: bool, new_holding: JaxArray['num_bots']) -> bool:
-            """
-            Updates the held state of the apples based on if they were dropped.
-
-            :param id: The id of the apple we're deciding the state for
-            :param new_holding: The new state of the bots.holding
-            :param currently_held: The current state of the apples.held
-            """
-
-            return jax.lax.cond(
-                jnp.any(id == new_holding),
-                lambda: False,
-                lambda: currently_held
-            )
-
-        new_held: JaxArray['num_apples'] = jax.vmap(update_held, in_axes=(0, 0, None))(state.apples.id, new_held, new_holding)
-
-        return new_holding, new_held, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop, bad_apple_drop
+        return new_holding, new_collected, new_apple_position, drop_mask & (~can_drop), is_near_basket & can_drop, bad_apple_drop
 
     def _nearest_apple(self, state: ComplexOrchardState) -> JaxArray['num_bots']:
         """
@@ -612,3 +594,4 @@ class ComplexOrchard(Environment[ComplexOrchardState]):
             maximum=1.0,
             name="discount",
         )
+
