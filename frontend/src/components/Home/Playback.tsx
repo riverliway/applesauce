@@ -29,7 +29,7 @@ export const Playback: React.FC = () => {
     const clear = setInterval(updateState, 1000 / history[0].TICK_SPEED * SIM_DISPLAY_SPEED)
 
     return () => clearInterval(clear)
-  }, [history.length])
+  }, [history.length, playing])
 
   if (history.length === 0) {
     return (
